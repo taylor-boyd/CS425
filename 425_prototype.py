@@ -45,34 +45,37 @@ class UI(QWidget):
         # BELOW: originally 550, 400
         self.menuSelection.resize(575, 400)
 
-        self.mainLayout = QVBoxLayout()
+        mainLayout = QVBoxLayout()
 
-        self.mainMenuTitle = QLabel(self.menuSelection)
+        mainMenuTitle = QLabel(self.menuSelection)
         #BELOW: x val orig. 130, width val 300
-        self.mainMenuTitle.setGeometry(QRect(130, -30, 320, 200))
-        self.mainMenuTitle.setAlignment(Qt.AlignCenter)
-        self.mainMenuTitle.setStyleSheet("font: 14pt Century Gothic")
-        self.mainMenuTitle.setText("Start Menu")
+        mainMenuTitle.setGeometry(QRect(130, -30, 320, 200))
+        mainMenuTitle.setAlignment(Qt.AlignCenter)
+        mainMenuTitle.setStyleSheet("font: 14pt Century Gothic")
+        mainMenuTitle.setText("Start Menu")
         
 
         self.menuSelection.setWindowTitle("Unique Facial Feature Detection")
-        self.CameraSettings = QPushButton('Camera Settings', self)
-        self.CameraSettings.setToolTip('Change camera settings')
+        CameraSettings = QPushButton('Camera Settings', self)
+        CameraSettings.setToolTip('Change camera settings')
 
-        # CameraSettings.clicked.connect(self.buttonClicked)
+        ChoosePicture = QPushButton("Choose from files", self)
+        ChoosePicture.setToolTip('Choose picture')
 
-        self.ChoosePicture = QPushButton("Choose from files", self)
-        self.ChoosePicture.setToolTip('Choose picture')
+        # Menu buttons
+        CameraSettings.clicked.connect(self.configureWebcamWindow)
+        ChoosePicture.clicked.connect(self.choosePictureWindow)
 
-        self.buttonLayout = QHBoxLayout()
-        self.buttonLayout.addWidget(self.CameraSettings)
-        self.buttonLayout.addWidget(self.ChoosePicture)
+
+        buttonLayout = QHBoxLayout()
+        buttonLayout.addWidget(CameraSettings)
+        buttonLayout.addWidget(ChoosePicture)
         
-        self.quitButton = QPushButton('Quit', self)
-        self.quitButton.clicked.connect(QApplication.instance().quit)
-        self.buttonLayout.addWidget(self.quitButton)
-        self.mainLayout.addLayout(self.buttonLayout)
-        self.menuSelection.setLayout(self.mainLayout)
+        quitButton = QPushButton('Quit', self)
+        quitButton.clicked.connect(QApplication.instance().quit)
+        buttonLayout.addWidget(quitButton)
+        mainLayout.addLayout(buttonLayout)
+        self.menuSelection.setLayout(mainLayout)
 
     def webcamConfiguration(self):
 
@@ -80,14 +83,16 @@ class UI(QWidget):
         # BELOW: originally 550, 400
         self.webcamSelection.resize(575, 400)
 
-        self.webcamLayout = QHBoxLayout()
+        webcamLayout = QHBoxLayout()
+
+        # TODO: Only turn on camera once we configure camera? 
 
         self.available_cameras = QCameraInfo.availableCameras()
         if not self.available_cameras:
             pass #quit
 
-        self.status = QStatusBar()
-        self.setStatusBar(self.status)
+        status = QStatusBar()
+        self.setStatusBar(status)
 
         self.save_path = ""
 
@@ -109,15 +114,20 @@ class UI(QWidget):
 
         camera_toolbar.addWidget(camera_selector)
 
-        self.webcamLayout.addWidget(self.menuButton) # back to main menu button
+        webcamLayout.addWidget(self.menuButton) # back to main menu button
 
-        self.continueSelectedWebcam = QPushButton("Continue", self)
-        self.webcamLayout.addWidget(self.continueSelectedWebcam)
+        continueSelectedWebcam = QPushButton("Continue", self)
 
-        self.webcamSelection.setLayout(self.webcamLayout)
+        # TODO: CHANGE ENDSCREEN TO PHOTO PROCESSESSING
+        continueSelectedWebcam.clicked.connect(self.goToEndScreen)
+
+        webcamLayout.addWidget(continueSelectedWebcam)
+        self.webcamSelection.setLayout(webcamLayout)
         #self.show()
 
     def select_camera(self, i):
+        
+        # Not sure which of the "self"s we need so ima keep it :)
         self.camera = QCamera(self.available_cameras[i])
         self.camera.setViewfinder(self.viewfinder)
         self.camera.setCaptureMode(QCamera.CaptureStillImage)
@@ -139,27 +149,30 @@ class UI(QWidget):
 
         # 320, 220
 
-        self.pictureSelectionLayout = QHBoxLayout()
-        self.pictureSelectionMainMenu = QVBoxLayout()
-        self.pictureSelectionMainMenu.addWidget(self.menuButton2)
+        pictureSelectionLayout = QHBoxLayout()
+        pictureSelectionMainMenu = QVBoxLayout()
+        pictureSelectionMainMenu.addWidget(self.menuButton2)
 
-        self.selectPhotoButton = QPushButton("Select a picture", self)
-        self.selectedPhotoContinue = QPushButton("Continue: ", self)
-        self.pictureSelectionLayout.addWidget(self.selectPhotoButton)
-        self.pictureSelectionLayout.addWidget(self.selectedPhotoContinue)
+        selectPhotoButton = QPushButton("Select a picture", self)
+        selectedPhotoContinue = QPushButton("Continue: ", self)
+        pictureSelectionLayout.addWidget(selectPhotoButton)
+        pictureSelectionLayout.addWidget(selectedPhotoContinue)
 
+        # Select photo button
+        selectPhotoButton.clicked.connect(self.openPhoto)
+        selectedPhotoContinue.clicked.connect(self.goToEndScreen)
 
-        self.selectedPhotoHelper = QLabel(self.pictureSelection)
+        selectedPhotoHelper = QLabel(self.pictureSelection)
         self.selectedPictureName = QLabel(self.pictureSelection)
-        self.selectedPhotoHelper.setGeometry(QRect(160, -60, 300, 200))
-        self.selectedPhotoHelper.setStyleSheet("font: 14pt Century Gothic")
-        self.selectedPhotoHelper.setText("Selected photo is: ")
+        selectedPhotoHelper.setGeometry(QRect(160, -60, 300, 200))
+        selectedPhotoHelper.setStyleSheet("font: 14pt Century Gothic")
+        selectedPhotoHelper.setText("Selected photo is: ")
 
         # TODO: 
         # Add a gridlayout to separate return menu option
 
-        self.pictureSelectionLayout.addLayout(self.pictureSelectionMainMenu)
-        self.pictureSelection.setLayout(self.pictureSelectionLayout)
+        pictureSelectionLayout.addLayout(pictureSelectionMainMenu)
+        self.pictureSelection.setLayout(pictureSelectionLayout)
 
     # Choose a file
     def openPhoto(self):
@@ -183,21 +196,26 @@ class UI(QWidget):
         # BELOW: originally 550, 400
         self.finalScreen.resize(575, 400)
 
-        self.finalScreenBtnLayout = QHBoxLayout()
-        self.menuButtonFinal = QPushButton("Restart")
-        self.exitBtn = QPushButton("Quit")
+        finalScreenBtnLayout = QHBoxLayout()
+        menuButtonFinal = QPushButton("Restart")
+        exitBtn = QPushButton("Quit")
 
-        self.finalScreenBtnLayout.addWidget(self.menuButtonFinal)
-        self.finalScreenBtnLayout.addWidget(self.exitBtn)
+        finalScreenBtnLayout.addWidget(menuButtonFinal)
+        finalScreenBtnLayout.addWidget(exitBtn)
         
 
-        self.finalScreenText = QLabel(self.finalScreen)
-        self.finalScreenText.setStyleSheet("font: 14pt Century Gothic")
-        self.finalScreenText.setText("Would you like to try again?")
-        self.finalScreenText.setGeometry(QRect(30, -10, 500, 200))
-        self.finalScreenText.setAlignment(Qt.AlignCenter)
+        finalScreenText = QLabel(self.finalScreen)
+        finalScreenText.setStyleSheet("font: 14pt Century Gothic")
+        finalScreenText.setText("Would you like to try again?")
+        finalScreenText.setGeometry(QRect(30, -10, 500, 200))
+        finalScreenText.setAlignment(Qt.AlignCenter)
 
-        self.finalScreen.setLayout(self.finalScreenBtnLayout)
+        # Final screen buttons
+        menuButtonFinal.clicked.connect(self.menuWindow)
+        exitBtn.clicked.connect(self.exitProgram)
+      
+
+        self.finalScreen.setLayout(finalScreenBtnLayout)
 
 
 
@@ -211,25 +229,12 @@ class Controller(QMainWindow, UI):
         
         # Sends back to main menu
         # Need separate widget for each window
+        # TODO: Figure out how to only have 1 menu button
+
         self.menuButton.clicked.connect(self.menuWindow)
         self.menuButton2.clicked.connect(self.menuWindow)
 
-        # Menu buttons
-        self.CameraSettings.clicked.connect(self.configureWebcamWindow)
-        self.ChoosePicture.clicked.connect(self.choosePictureWindow)
-
-        # Select photo button
-        self.selectPhotoButton.clicked.connect(self.openPhoto)
-
-        # Continue with selected photo 
-        # TODO: CHANGE ENDSCREEN TO PHOTO PROCESSESSING
-        self.continueSelectedWebcam.clicked.connect(self.goToEndScreen)
-        self.selectedPhotoContinue.clicked.connect(self.goToEndScreen)
-
-        # Final screen buttons
-        self.menuButtonFinal.clicked.connect(self.menuWindow)
-        self.exitBtn.clicked.connect(self.exitProgram)
-        
+       
         
     def menuWindow(self):
         self.menu.setCurrentIndex(0)
