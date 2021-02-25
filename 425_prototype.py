@@ -43,6 +43,7 @@ class UI(QWidget):
         self.photoProcessing()
         self.photoProcessed()
         self.featuresList()
+        self.caricatureCreation()
         self.endScreen()
 
         # order matters!
@@ -293,6 +294,7 @@ class UI(QWidget):
         photoProcessedBtnLayout.addWidget(createCaricatureBtn)
 
         getFeaturesListBtn.clicked.connect(self.featuresListWindow)
+        createCaricatureBtn.clicked.connect(self.caricatureCreationWindow)
 
         self.photoProcessedScreen.setLayout(photoProcessedBtnLayout)
 
@@ -324,7 +326,6 @@ class UI(QWidget):
         featuresLayout.addWidget(featuresListLabel)
 
 
-
         # Allow save option
         # Save in .txt format is probably preferable
         # saveListBtn does nothing for now, will implement when we tie in unique algorithm
@@ -339,6 +340,46 @@ class UI(QWidget):
 
         featuresLayout.addLayout(featuresBtnLayout)
         self.featuresListScreen.setLayout(featuresLayout)
+
+    def caricatureCreation(self):
+        # TODO:
+        # Shorten names pleeeeeeeeeeeeeeeeeeeeez
+
+        self.caricatureCreationScreen.setWindowTitle("Unique Facial Feature Detection")
+        self.caricatureCreationScreen.resize(575, 400)
+
+        caricatureCreationLayout = QVBoxLayout()
+        caricatureCreationBtnLayout = QHBoxLayout()
+
+        createdCaricatureText = QLabel(self.photoProcessedScreen)
+        createdCaricatureText.setStyleSheet("font: 14pt Century Gothic")
+        createdCaricatureText.setText("Your caricature!")
+        # obtainedFeaturesList.setGeometry(QRect(30, -10, 500, 200))
+        createdCaricatureText.setAlignment(Qt.AlignCenter)
+
+        caricatureCreationLayout.addWidget(createdCaricatureText)
+
+        createdCaricature = QPixmap("static/SampleCaricature")
+        createdCaricatureLabel = QLabel(self.caricatureCreationScreen)
+        createdCaricatureLabel.setAlignment(Qt.AlignCenter)
+        createdCaricatureLabel.setPixmap(createdCaricature)
+
+
+        caricatureCreationLayout.addWidget(createdCaricatureLabel)
+
+        saveListBtn = QPushButton("Save caricature")
+        continueBtn = QPushButton("Continue")
+
+        caricatureCreationBtnLayout.addWidget(saveListBtn)
+        caricatureCreationBtnLayout.addWidget(continueBtn)
+
+        continueBtn.clicked.connect(self.goToEndWindow)
+        caricatureCreationLayout.addLayout(caricatureCreationBtnLayout)
+        self.caricatureCreationScreen.setLayout(caricatureCreationLayout)
+
+
+
+
 
 
         
