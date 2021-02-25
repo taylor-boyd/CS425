@@ -11,12 +11,13 @@ import time
 
 # TODO:
 # Only continue if valid webcam or valid picture is selected
-# Fix screen name convention
+# Fix screen name convention (menuSelection, webcamSelection)..
 
 class UI(QWidget):
     def setup(self, Controller):
         
         # Need multiple menuButtons for each 
+        # FIX THIS SOON PLEASE IT'S GROSSSSSSSS
         self.menuButton = QPushButton("Back to main menu")
         self.menuButton2 = QPushButton("Back to main menu")
 
@@ -27,16 +28,21 @@ class UI(QWidget):
         self.menuSelection = QWidget()
         self.webcamSelection = QWidget()
         self.pictureSelection = QWidget()
-
         # Make sure finalScreen ends up as last widget
         self.photoProcessingScreen = QWidget()
+        self.photoProcessedScreen = QWidget()
+        self.featuresListScreen = QWidget()
+        self.caricatureCreationScreen = QWidget()
         self.finalScreen = QWidget()
+
 
         # Call the functions here
         self.beginningMenu()
         self.webcamConfiguration()
         self.photoSelection()
         self.photoProcessing()
+        self.photoProcessed()
+        self.featuresList()
         self.endScreen()
 
         # order matters!
@@ -44,6 +50,9 @@ class UI(QWidget):
         self.menu.addWidget(self.webcamSelection)
         self.menu.addWidget(self.pictureSelection)
         self.menu.addWidget(self.photoProcessingScreen)
+        self.menu.addWidget(self.photoProcessedScreen)
+        self.menu.addWidget(self.featuresListScreen)
+        self.menu.addWidget(self.caricatureCreationScreen)
         self.menu.addWidget(self.finalScreen)
 
     def beginningMenu(self):
@@ -231,6 +240,9 @@ class UI(QWidget):
         self.photoProcessingScreen.setWindowTitle("Unique Facial Feature Detection")
         self.photoProcessingScreen.resize(575, 400)
 
+        photoProcessingBtnLayout = QHBoxLayout()
+
+        # Spinner animation
         spinnerLabel = QLabel(self.photoProcessingScreen)
         spinnerLabel.setGeometry(QRect(270, 120, 30, 30))
         spinnerLabel.setScaledContents(True)
@@ -243,8 +255,15 @@ class UI(QWidget):
         obtainingFeaturesText.setText("Obtaining unique features...")
         obtainingFeaturesText.setGeometry(QRect(30, -10, 500, 200))
         obtainingFeaturesText.setAlignment(Qt.AlignCenter)
+
+        photoProcessedBtn = QPushButton("Continue") 
+        photoProcessingBtnLayout.addWidget(photoProcessedBtn)
+
+        photoProcessedBtn.clicked.connect(self.photoProcessedWindow)
+
+
+        self.photoProcessingScreen.setLayout(photoProcessingBtnLayout)
         
-        photoProcessingBtnLayout = QHBoxLayout()
 
 
         #TODO:
@@ -252,7 +271,74 @@ class UI(QWidget):
         # Allow back button??
 
         # spinner.stop()
-        
+
+    # Menu to choose feature list or create a caricature
+    def photoProcessed(self):
+        self.photoProcessedScreen.setWindowTitle("Unique Facial Feature Detection")
+        self.photoProcessedScreen.resize(575, 400)
+
+        obtainedFeaturesText= QLabel(self.photoProcessedScreen)
+        obtainedFeaturesText.setStyleSheet("font: 14pt Century Gothic")
+        obtainedFeaturesText.setText("Obtained unique features!")
+        obtainedFeaturesText.setGeometry(QRect(30, -10, 500, 200))
+        obtainedFeaturesText.setAlignment(Qt.AlignCenter)
+
+
+        # Two buttons here for Feature List or Caricature
+        photoProcessedBtnLayout = QHBoxLayout()
+        getFeaturesListBtn = QPushButton("Get unique feature's list!")
+        createCaricatureBtn = QPushButton("Create a caricature!")
+
+        photoProcessedBtnLayout.addWidget(getFeaturesListBtn)
+        photoProcessedBtnLayout.addWidget(createCaricatureBtn)
+
+        getFeaturesListBtn.clicked.connect(self.featuresListWindow)
+
+        self.photoProcessedScreen.setLayout(photoProcessedBtnLayout)
+
+    # Display feature list
+    def featuresList(self):
+        self.featuresListScreen.setWindowTitle("Unique Facial Feature Detection")
+        self.featuresListScreen.resize(575, 400)
+
+        featuresLayout = QVBoxLayout()
+        # Hold save and continue button
+        featuresBtnLayout = QHBoxLayout()
+
+        obtainedFeaturesList = QLabel(self.photoProcessedScreen)
+        obtainedFeaturesList.setStyleSheet("font: 14pt Century Gothic")
+        obtainedFeaturesList.setText("Your unique features!")
+        # obtainedFeaturesList.setGeometry(QRect(30, -10, 500, 200))
+        obtainedFeaturesList.setAlignment(Qt.AlignCenter)
+
+        featuresLayout.addWidget(obtainedFeaturesList)
+
+
+        # Display features
+
+        featuresList = QPixmap("static/SampleFeatures")
+
+        featuresListLabel = QLabel(self.photoProcessedScreen)
+        featuresListLabel.setPixmap(featuresList)
+
+        featuresLayout.addWidget(featuresListLabel)
+
+
+
+        # Allow save option
+        # Save in .txt format is probably preferable
+        # saveListBtn does nothing for now, will implement when we tie in unique algorithm
+        saveListBtn = QPushButton("Save unique features list")
+        continueBtn = QPushButton("Continue")
+
+        featuresBtnLayout.addWidget(saveListBtn)
+        featuresBtnLayout.addWidget(continueBtn)
+
+        # Go to end screen
+        continueBtn.clicked.connect(self.goToEndWindow)
+
+        featuresLayout.addLayout(featuresBtnLayout)
+        self.featuresListScreen.setLayout(featuresLayout)
 
 
         
@@ -285,13 +371,23 @@ class Controller(QMainWindow, UI):
     def choosePictureWindow(self):
         self.menu.setCurrentIndex(2)
 
-    
-    def goToEndWindow(self):
-        self.menu.setCurrentIndex(4)
-        
         # Choose for caricature or just a list
     def photoProcessingWindow(self):
         self.menu.setCurrentIndex(3)
+
+    def photoProcessedWindow(self):
+        self.menu.setCurrentIndex(4)
+
+    def featuresListWindow(self):
+        self.menu.setCurrentIndex(5)
+
+    def caricatureCreationWindow(self):
+        self.menu.setCurrentIndex(6)
+
+
+    def goToEndWindow(self):
+        self.menu.setCurrentIndex(7)
+     
 
 
     def exitProgram(self):
