@@ -11,6 +11,7 @@ import time
 
 # TODO:
 # Only continue if valid webcam or valid picture is selected
+# Fix screen name convention
 
 class UI(QWidget):
     def setup(self, Controller):
@@ -26,18 +27,23 @@ class UI(QWidget):
         self.menuSelection = QWidget()
         self.webcamSelection = QWidget()
         self.pictureSelection = QWidget()
+
+        # Make sure finalScreen ends up as last widget
+        self.photoProcessingScreen = QWidget()
         self.finalScreen = QWidget()
 
         # Call the functions here
         self.beginningMenu()
         self.webcamConfiguration()
         self.photoSelection()
+        self.photoProcessing()
         self.endScreen()
 
         # order matters!
         self.menu.addWidget(self.menuSelection)
         self.menu.addWidget(self.webcamSelection)
         self.menu.addWidget(self.pictureSelection)
+        self.menu.addWidget(self.photoProcessingScreen)
         self.menu.addWidget(self.finalScreen)
 
     def beginningMenu(self):
@@ -119,7 +125,7 @@ class UI(QWidget):
         continueSelectedWebcam = QPushButton("Continue", self)
 
         # TODO: CHANGE ENDSCREEN TO PHOTO PROCESSESSING
-        continueSelectedWebcam.clicked.connect(self.goToEndScreen)
+        continueSelectedWebcam.clicked.connect(self.photoProcessingWindow)
 
         webcamLayout.addWidget(continueSelectedWebcam)
         self.webcamSelection.setLayout(webcamLayout)
@@ -132,7 +138,10 @@ class UI(QWidget):
         self.camera.setViewfinder(self.viewfinder)
         self.camera.setCaptureMode(QCamera.CaptureStillImage)
         self.camera.error.connect(lambda: self.alert(self.camera.errorString()))
-        self.camera.start()
+
+        # Commented out so camera doesn't turn on 
+        # Only activate this if choose camera option is selected
+        # self.camera.start()
 
         self.capture = QCameraImageCapture(self.camera)
         self.capture.error.connect(lambda i, e, s: self.alert(s))
@@ -160,7 +169,7 @@ class UI(QWidget):
 
         # Select photo button
         selectPhotoButton.clicked.connect(self.openPhoto)
-        selectedPhotoContinue.clicked.connect(self.goToEndScreen)
+        selectedPhotoContinue.clicked.connect(self.photoProcessingWindow)
 
         selectedPhotoHelper = QLabel(self.pictureSelection)
         self.selectedPictureName = QLabel(self.pictureSelection)
@@ -217,6 +226,36 @@ class UI(QWidget):
 
         self.finalScreen.setLayout(finalScreenBtnLayout)
 
+    # MIGHT NOT EVEN NEED IF PROCESSING IS TOO FAST
+    def photoProcessing(self):
+        self.photoProcessingScreen.setWindowTitle("Unique Facial Feature Detection")
+        self.photoProcessingScreen.resize(575, 400)
+
+        spinnerLabel = QLabel(self.photoProcessingScreen)
+        spinnerLabel.setGeometry(QRect(270, 120, 30, 30))
+        spinnerLabel.setScaledContents(True)
+        spinner = QMovie("static/spinner.gif")
+        spinnerLabel.setMovie(spinner)
+        spinner.start()
+
+        obtainingFeaturesText = QLabel(self.photoProcessingScreen)
+        obtainingFeaturesText.setStyleSheet("font: 14pt Century Gothic")
+        obtainingFeaturesText.setText("Obtaining unique features...")
+        obtainingFeaturesText.setGeometry(QRect(30, -10, 500, 200))
+        obtainingFeaturesText.setAlignment(Qt.AlignCenter)
+        
+        photoProcessingBtnLayout = QHBoxLayout()
+
+
+        #TODO:
+        # Only put continue if features have been extracted
+        # Allow back button??
+
+        # spinner.stop()
+        
+
+
+        
 
 
 class Controller(QMainWindow, UI):
@@ -246,8 +285,14 @@ class Controller(QMainWindow, UI):
     def choosePictureWindow(self):
         self.menu.setCurrentIndex(2)
 
-    def goToEndScreen(self):
+    
+    def goToEndWindow(self):
+        self.menu.setCurrentIndex(4)
+        
+        # Choose for caricature or just a list
+    def photoProcessingWindow(self):
         self.menu.setCurrentIndex(3)
+
 
     def exitProgram(self):
         sys.exit()
