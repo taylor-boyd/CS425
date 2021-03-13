@@ -204,6 +204,9 @@ class UI(QWidget):
             self.selectedPictureName.setStyleSheet("font: 10pt Century Gothic")
             self.selectedPictureName.setText(str(files))
 
+            # TODO: Try testing open pic with PIL Image
+            # im1 = Image.open(str(files))
+
             # TODO: Implement picture preview
             # self.picturePreview = QPixmap(str(files))
             # self.selectedPictureName.setPixmap(self.picturePreview)
@@ -257,6 +260,10 @@ class UI(QWidget):
         obtainingFeaturesText.setGeometry(QRect(30, -10, 500, 200))
         obtainingFeaturesText.setAlignment(Qt.AlignCenter)
 
+        # TODO: Run selected photo (self.selectedPictureName ?) through backend
+        # exec(open("./filename").read()) OR os.system('python my_file.py')
+        # how to incorporate command-line args for image file name?
+
         photoProcessedBtn = QPushButton("Continue") 
         photoProcessingBtnLayout.addWidget(photoProcessedBtn)
 
@@ -264,9 +271,9 @@ class UI(QWidget):
 
 
         self.photoProcessingScreen.setLayout(photoProcessingBtnLayout)
+
         
-
-
+        
         #TODO:
         # Only put continue if features have been extracted
         # Allow back button??
@@ -317,7 +324,7 @@ class UI(QWidget):
 
 
         # Display features
-
+        # TODO: get/output features from Bryson's code (backend) instead of static pic
         featuresList = QPixmap("static/SampleFeatures")
 
         featuresListLabel = QLabel(self.photoProcessedScreen)
