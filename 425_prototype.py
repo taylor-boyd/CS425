@@ -72,8 +72,8 @@ class UI(QWidget):
         
 
         self.menuSelection.setWindowTitle("Unique Facial Feature Detection")
-        CameraSettings = QPushButton('Camera Settings', self)
-        CameraSettings.setToolTip('Change camera settings')
+        CameraSettings = QPushButton('Use a webcam', self)
+        CameraSettings.setToolTip('Choose a Webcam')
 
         ChoosePicture = QPushButton("Choose from files", self)
         ChoosePicture.setToolTip('Choose picture')
@@ -377,8 +377,7 @@ class UI(QWidget):
         caricatureCreationLayout.addLayout(caricatureCreationBtnLayout)
         self.caricatureCreationScreen.setLayout(caricatureCreationLayout)
 
-
-
+ 
 
 
 
@@ -399,6 +398,19 @@ class Controller(QMainWindow, UI):
 
         self.menuButton.clicked.connect(self.menuWindow)
         self.menuButton2.clicked.connect(self.menuWindow)
+    
+    #
+    # def closeEvent(self, event):
+    #    quit_msg = "Are you sure you want to exit?"
+    #    reply = QtWidgets.QMessageBox.question(self, 'Exit',
+    #                        quit_msg, QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+
+    #    if reply == QtWidgets.QMessageBox.yes:
+    #        event.accept()
+    #    else:
+    #        event.ignore()
+
+
 
        
         
@@ -429,10 +441,11 @@ class Controller(QMainWindow, UI):
     def goToEndWindow(self):
         self.menu.setCurrentIndex(7)
      
-
+   
 
     def exitProgram(self):
         sys.exit()
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
