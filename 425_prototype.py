@@ -8,6 +8,7 @@ from PyQt5.QtMultimediaWidgets import *
 import os
 import sys
 import time
+import subprocess
 
 # TODO:
 # Only continue if valid webcam or valid picture is selected
@@ -179,8 +180,9 @@ class UI(QWidget):
 
         # Select photo button
         selectPhotoButton.clicked.connect(self.openPhoto)
+        # TODO: Run selected photo through backend
         selectedPhotoContinue.clicked.connect(self.photoProcessingWindow)
-
+        
         selectedPhotoHelper = QLabel(self.pictureSelection)
         self.selectedPictureName = QLabel(self.pictureSelection)
         selectedPhotoHelper.setGeometry(QRect(160, -60, 300, 200))
@@ -203,6 +205,27 @@ class UI(QWidget):
             self.selectedPictureName.setAlignment(Qt.AlignCenter)
             self.selectedPictureName.setStyleSheet("font: 10pt Century Gothic")
             self.selectedPictureName.setText(str(files))
+
+            # print("setText: ", self.selectedPictureName.text())  # TODO: delete this test later
+            # print(type(self.selectedPictureName))
+
+            filename = QTextDocument(self.selectedPictureName.text())
+            textFileName = filename.toPlainText()
+
+            # get actual photo file name without end punctuation
+            afterFirstApost = textFileName.find('\'') + 1
+            lastApost = len(textFileName) - 2
+            actualFileName = textFileName[afterFirstApost:lastApost]
+            print(actualFileName)
+
+            # old way of calling shape_predict.py, can probably delete; returns 0 on success
+            # self.uniqueFeatureList = os.system('python backend/shape_predict.py ' + actualFileName)
+
+            # run shape_predict.py with actualFileName
+            proc = subprocess.Popen(["python", "backend/shape_predict.py", actualFileName], stdout=subprocess.PIPE, shell=True)
+            (out, err) = proc.communicate()
+            self.uniqueFeatureList = out.decode("utf-8")
+            print ("UNIQUE FEATURES:", self.uniqueFeatureList)
 
             # TODO: Try testing open pic with PIL Image
             # im1 = Image.open(str(files))
@@ -259,10 +282,6 @@ class UI(QWidget):
         obtainingFeaturesText.setText("Obtaining unique features...")
         obtainingFeaturesText.setGeometry(QRect(30, -10, 500, 200))
         obtainingFeaturesText.setAlignment(Qt.AlignCenter)
-
-        # TODO: Run selected photo (self.selectedPictureName ?) through backend
-        # exec(open("./filename").read()) OR os.system('python my_file.py')
-        # how to incorporate command-line args for image file name?
 
         photoProcessedBtn = QPushButton("Continue") 
         photoProcessingBtnLayout.addWidget(photoProcessedBtn)
@@ -393,7 +412,7 @@ class UI(QWidget):
 
 class Controller(QMainWindow, UI):
     def __init__(self):
-
+        self.uniqueFeatureList = None
         super().__init__()
         
         self.setup(self)

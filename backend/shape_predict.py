@@ -80,7 +80,7 @@ if __name__ == "__main__":
         print("Usage: shape_predict.py IMAGE_FILE")
         exit()
 
-    predictor = ShapePredictor("model/shape_model", "shape-labels.txt")
+    predictor = ShapePredictor("backend/model/shape_model", "backend/shape-labels.txt")
     test_image = Image.open(sys.argv[1])
     results = predictor.process_image(test_image)
     print(results)
