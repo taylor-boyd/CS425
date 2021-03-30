@@ -8,7 +8,7 @@ from skimage import io
 
 fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._2D, flip_input=False)
 
-currentImage = "Test3.jpeg"
+currentImage = "./FaceAlignTests/Test3.jpeg"
 
 input = io.imread(currentImage)
 preds = fa.get_landmarks(input)
