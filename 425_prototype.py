@@ -8,11 +8,22 @@ from PyQt5.QtMultimediaWidgets import *
 import os
 import sys
 import time
+import copy
+
+sys.path.append('./backend/')
+import FaceAlignmentv2 as CropPhoto
 
 # TODO:
 # Only continue if valid webcam or valid picture is selected
 # Fix screen name convention (menuSelection, webcamSelection)..
 
+# Notes:
+# Webcam photos save in default "photos" if folder isn't selected
+# Should save in folder where facial alignment algorithm would work
+# Don't show click button until camera is shown?
+# Flow -> Select a photo or webcam, send to facial alignment, finish in Bryson's Algorithm
+# Smaller image size than 500 kb? Currently have smaller than 1 MB
+# 
 class UI(QWidget):
     def setup(self, Controller):
         
@@ -27,6 +38,7 @@ class UI(QWidget):
         self.menuSelection = QWidget()
         self.webcamSelection = QWidget()
         self.pictureSelection = QWidget()
+        self.resizeSelectedPicture = QWidget()
 
         # Make sure finalScreen ends up as last widget
         self.photoProcessingScreen = QWidget()
@@ -39,6 +51,7 @@ class UI(QWidget):
         self.beginningMenu()
         self.webcamConfiguration()
         self.photoSelection()
+        self.resizingPicture()
         self.photoProcessing()
         self.photoProcessed()
         self.featuresList()
@@ -49,6 +62,7 @@ class UI(QWidget):
         self.menu.addWidget(self.menuSelection)
         self.menu.addWidget(self.webcamSelection)
         self.menu.addWidget(self.pictureSelection)
+        self.menu.addWidget(self.resizeSelectedPicture)
         self.menu.addWidget(self.photoProcessingScreen)
         self.menu.addWidget(self.photoProcessedScreen)
         self.menu.addWidget(self.featuresListScreen)
@@ -304,29 +318,36 @@ class UI(QWidget):
 
         self.pictureSelection.resize(575, 400)
 
-        pictureSelectionLayout = QHBoxLayout()
-        pictureSelectionMainMenu = QVBoxLayout()
+        pictureSelectionLayout = QVBoxLayout()
+        pictureSelectionMainMenu = QHBoxLayout()
         pictureSelectionMainMenu.addWidget(self.menuButton2)
 
         selectPhotoButton = QPushButton("Select a picture", self)
         selectedPhotoContinue = QPushButton("Continue: ", self)
-        pictureSelectionLayout.addWidget(selectPhotoButton)
-        pictureSelectionLayout.addWidget(selectedPhotoContinue)
+        pictureSelectionMainMenu.addWidget(selectPhotoButton)
+        pictureSelectionMainMenu.addWidget(selectedPhotoContinue)
 
         # Select photo button
         selectPhotoButton.clicked.connect(self.openPhoto)
-        selectedPhotoContinue.clicked.connect(self.photoProcessingWindow)
+
+        # Go to resizing window
+        selectedPhotoContinue.clicked.connect(self.resizingPhotoWindow)
 
         selectedPhotoHelper = QLabel(self.pictureSelection)
         self.selectedPictureName = QLabel(self.pictureSelection)
+
         selectedPhotoHelper.setGeometry(QRect(160, -60, 300, 200))
         selectedPhotoHelper.setStyleSheet("font: 14pt Century Gothic")
         selectedPhotoHelper.setText("Selected photo is: ")
 
-        # TODO: 
-        # Add a gridlayout to separate return menu option
+        pictureDisplayLayout = QVBoxLayout()
+        pictureDisplayLayout.addWidget(selectedPhotoHelper)
+        pictureDisplayLayout.addWidget(self.selectedPictureName)
 
+        
+        pictureSelectionLayout.addLayout(pictureDisplayLayout)
         pictureSelectionLayout.addLayout(pictureSelectionMainMenu)
+
         self.pictureSelection.setLayout(pictureSelectionLayout)
 
     # Choose a file
@@ -334,17 +355,43 @@ class UI(QWidget):
         # options = QFileDialog.Options()
         files, _ = QFileDialog.getOpenFileNames(self,"QFileDialog.getOpenFileNames()", "","Image files (*.jpg *.png)")
         if files:
-            print(files)
             self.selectedPictureName.setGeometry(QRect(70, -30, 500, 200))
             self.selectedPictureName.setAlignment(Qt.AlignCenter)
             self.selectedPictureName.setStyleSheet("font: 10pt Century Gothic")
-            self.selectedPictureName.setText(str(files))
+            
 
-            # TODO: Implement picture preview
-            # self.picturePreview = QPixmap(str(files))
-            # self.selectedPictureName.setPixmap(self.picturePreview)
-            # self.setCentralWidget(self.selectedPictureName)
-            # self.resize(self.picturePreview.width(), self.picturePreview.height())
+            picturePreview = QPixmap(files[0])
+            self.selectedPictureName.setPixmap(picturePreview.scaled(self.selectedPictureName.width() * 2, self.selectedPictureName.height() * 2, Qt.KeepAspectRatio))
+
+    def resizingPicture(self):
+        self.resizeSelectedPicture.setWindowTitle("Unique Facial Feature Detection")
+        self.resizeSelectedPicture.resize(575, 400)
+        
+        resizingPictureLayout = QVBoxLayout()
+
+
+        # Photo picked from user
+        resizingPictureDisplayLayout = QHBoxLayout()
+
+
+        # Buttons
+        resizingPictureBtnLayout = QHBoxLayout()
+        repeatResizingPicture = QPushButton("Redo resize photo", self) 
+        finishedResizingPhotoButton = QPushButton("Continue", self)
+
+        resizingPictureBtnLayout.addWidget(repeatResizingPicture)
+        resizingPictureBtnLayout.addWidget(finishedResizingPhotoButton)
+       
+
+        resizingPictureLayout.addLayout(resizingPictureDisplayLayout)
+        resizingPictureLayout.addLayout(resizingPictureBtnLayout)
+
+        
+        self.resizeSelectedPicture.setLayout(resizingPictureLayout)
+
+        finishedResizingPhotoButton.clicked.connect(self.photoProcessingWindow)
+
+        
 
     def endScreen(self):
         self.finalScreen.setWindowTitle("Unique Facial Feature Detection")
@@ -539,21 +586,24 @@ class Controller(QMainWindow, UI):
     def choosePictureWindow(self):
         self.menu.setCurrentIndex(2)
 
-    # Choose for caricature or just a list
-    def photoProcessingWindow(self):
+    def resizingPhotoWindow(self):
         self.menu.setCurrentIndex(3)
 
-    def photoProcessedWindow(self):
+    # Choose for caricature or just a list
+    def photoProcessingWindow(self):
         self.menu.setCurrentIndex(4)
 
-    def featuresListWindow(self):
+    def photoProcessedWindow(self):
         self.menu.setCurrentIndex(5)
 
-    def caricatureCreationWindow(self):
+    def featuresListWindow(self):
         self.menu.setCurrentIndex(6)
 
-    def goToEndWindow(self):
+    def caricatureCreationWindow(self):
         self.menu.setCurrentIndex(7)
+
+    def goToEndWindow(self):
+        self.menu.setCurrentIndex(8)
      
 
 

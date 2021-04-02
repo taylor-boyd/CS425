@@ -56,8 +56,8 @@ def FaceAlignment(currentImage):
             bottomRight.append(x.tolist())
         elif (x[0] < midPointX and x[1] < midPointY):
             upperLeft.append(x.tolist())
-    bottomRightMax = generateMaxCoords(bottomRight)
-    upperLeftMax = generateMaxCoords(upperLeft)
+    bottomRightMax = generateMaxCoords(bottomRight, midPointX, midPointY)
+    upperLeftMax = generateMaxCoords(upperLeft, midPointX, midPointY)
 
     # Adding extra space
     bottomRightMax[0] += 100
@@ -82,7 +82,7 @@ def FaceAlignment(currentImage):
 
 
 # Getting furthest coords (from midPoint)
-def generateMaxCoords(section):
+def generateMaxCoords(section, midPointX, midPointY):
     maxCoords = 0
     maxNum = 0
     for x in section:
@@ -94,7 +94,7 @@ def generateMaxCoords(section):
     return maxCoords
 
 # This will be passed from front end
-currentImage = "./FaceAlignTests/Test1.jpg"
+currentImage = "./FaceAlignTests/Test3.jpg"
 
 # This function will be called from front end
 FaceAlignment(currentImage)
