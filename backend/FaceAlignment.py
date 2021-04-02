@@ -11,7 +11,8 @@ from skimage import io
 
 
 # Provide user path to photo here from front end
-def FaceAlignment(currentImage):
+def FaceAlignmentAuto(currentImage):
+    print ("IN ALIGNMENT")
 
     currentImageFileSize = os.stat(currentImage).st_size
 
@@ -60,9 +61,18 @@ def FaceAlignment(currentImage):
     upperLeftMax = generateMaxCoords(upperLeft, midPointX, midPointY)
 
     # Adding extra space
+    # Good values for what I tested, can adjust to your liking 
+
+    # Moved image right (pos values)
     bottomRightMax[0] += 100
-    upperLeftMax[0] -= 100
-    bottomRightMax[1] += 100
+
+    # Moved image left (pos values)
+    upperLeftMax[0] -= 10
+
+    # Moved image down (pos values)
+    bottomRightMax[1] += 10
+
+    # Moved image up (pos values)
     upperLeftMax[1] -= 100
 
 
@@ -70,14 +80,13 @@ def FaceAlignment(currentImage):
 
     # The math coordinate system here is weird, research PIL crop to learn more (this part was confusing D:)
     img2 = im.crop((upperLeftMax[0], upperLeftMax[1],  bottomRightMax[0], bottomRightMax[1]))
-    size = 178, 218
+    size = (178, 218)
 
     # Save thumbnail in required format
     # UNCOMMENT WHEN RESIZING THE IMAGE!!!
-    # img2.thumbnail(size, Image.ANTIALIAS)
-    # img2.save("Test.jpeg", "JPEG")
-
-    img2.show()
+    img2 = img2.resize(size)
+    img2.save("./backend/ResizedImages/newCropped.jpeg", "JPEG")
+    # img2.show()
 
 
 
@@ -94,7 +103,7 @@ def generateMaxCoords(section, midPointX, midPointY):
     return maxCoords
 
 # This will be passed from front end
-currentImage = "./FaceAlignTests/Test3.jpg"
+# currentImage = "./FaceAlignTests/Test3.jpg"
 
 # This function will be called from front end
-FaceAlignment(currentImage)
+# FaceAlignment(currentImage)

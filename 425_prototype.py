@@ -8,10 +8,15 @@ from PyQt5.QtMultimediaWidgets import *
 import os
 import sys
 import time
-import copy
+import cv2
 
 sys.path.append('./backend/')
-import FaceAlignmentv2 as CropPhoto
+# Optimally but both functions into one file
+# Allow manual face alignment
+from FaceAlignmentv2 import FaceAlignmentManual
+# Allow algorithm to do it automatically
+from FaceAlignment import FaceAlignmentAuto
+
 
 # TODO:
 # Only continue if valid webcam or valid picture is selected
@@ -24,6 +29,19 @@ import FaceAlignmentv2 as CropPhoto
 # Flow -> Select a photo or webcam, send to facial alignment, finish in Bryson's Algorithm
 # Smaller image size than 500 kb? Currently have smaller than 1 MB
 # 
+
+# TODO:
+# IMPLEMENT MULTITHREADING SO PROGRAM WON'T FREEZE WHEN GETTING FACE ALIGNMENT
+# https://www.learnpyqt.com/tutorials/multithreading-pyqt-applications-qthreadpool/
+# class Worker(QRunnable):
+
+
+#    @pyqtSlot()
+#        def run(self):
+#        print ("hi")
+#        time.sleep(5)
+#        print ("complete")
+
 class UI(QWidget):
     def setup(self, Controller):
         
@@ -38,6 +56,7 @@ class UI(QWidget):
         self.menuSelection = QWidget()
         self.webcamSelection = QWidget()
         self.pictureSelection = QWidget()
+        self.resizeSelectedPictureProcessing = QWidget()
         self.resizeSelectedPicture = QWidget()
 
         # Make sure finalScreen ends up as last widget
@@ -51,6 +70,7 @@ class UI(QWidget):
         self.beginningMenu()
         self.webcamConfiguration()
         self.photoSelection()
+#        self.resizingPictureProcessing()
         self.resizingPicture()
         self.photoProcessing()
         self.photoProcessed()
@@ -62,6 +82,7 @@ class UI(QWidget):
         self.menu.addWidget(self.menuSelection)
         self.menu.addWidget(self.webcamSelection)
         self.menu.addWidget(self.pictureSelection)
+        # self.menu.addWidget(self.resizeSelectedPictureProcessing)
         self.menu.addWidget(self.resizeSelectedPicture)
         self.menu.addWidget(self.photoProcessingScreen)
         self.menu.addWidget(self.photoProcessedScreen)
@@ -250,7 +271,7 @@ class UI(QWidget):
         self.camera.error.connect(lambda: self.alert(self.camera.errorString())) 
   
         # start the camera 
-        self.camera.start() 
+        # self.camera.start() 
   
         # creating a QCameraImageCapture object 
         self.capture = QCameraImageCapture(self.camera) 
@@ -331,7 +352,7 @@ class UI(QWidget):
         selectPhotoButton.clicked.connect(self.openPhoto)
 
         # Go to resizing window
-        selectedPhotoContinue.clicked.connect(self.resizingPhotoWindow)
+        selectedPhotoContinue.clicked.connect(self.startFaceAlignmentAuto)
 
         selectedPhotoHelper = QLabel(self.pictureSelection)
         self.selectedPictureName = QLabel(self.pictureSelection)
@@ -340,6 +361,8 @@ class UI(QWidget):
         selectedPhotoHelper.setStyleSheet("font: 14pt Century Gothic")
         selectedPhotoHelper.setText("Selected photo is: ")
 
+        self.selectedPictureLocation = ""
+        
         pictureDisplayLayout = QVBoxLayout()
         pictureDisplayLayout.addWidget(selectedPhotoHelper)
         pictureDisplayLayout.addWidget(self.selectedPictureName)
@@ -350,6 +373,23 @@ class UI(QWidget):
 
         self.pictureSelection.setLayout(pictureSelectionLayout)
 
+    def startFaceAlignmentAuto(self):
+        self.resizingProcessedWindow()
+        FaceAlignmentAuto(self.selectedPictureLocation)
+
+        # Setting the cropped img once FaceAlignment is done
+        # Need to think of this when we use multiple photos
+        self.croppedImg = QPixmap("./backend/ResizedImages/newCropped.jpeg")
+        self.resizingPictureDisplayLabel.setPixmap(self.croppedImg)
+        print(self.selectedPictureLocation)
+
+    def startFaceAlignmentManual(self):
+        FaceAlignmentManual(self.selectedPictureLocation)
+        # Resetting the photo on screen
+        self.croppedImg = QPixmap("./backend/ResizedImages/newCropped.jpeg")
+        self.resizingPictureDisplayLabel.setPixmap(self.croppedImg)
+        
+       
     # Choose a file
     def openPhoto(self):
         # options = QFileDialog.Options()
@@ -359,24 +399,67 @@ class UI(QWidget):
             self.selectedPictureName.setAlignment(Qt.AlignCenter)
             self.selectedPictureName.setStyleSheet("font: 10pt Century Gothic")
             
-
             picturePreview = QPixmap(files[0])
             self.selectedPictureName.setPixmap(picturePreview.scaled(self.selectedPictureName.width() * 2, self.selectedPictureName.height() * 2, Qt.KeepAspectRatio))
 
+            self.selectedPictureLocation = files[0]
+
+
+            
+            # Incorporate/mix Jazel's code here
+            # We send cropped photo through Jazel's code to send to Bryson's Algorithm
+
+
+    # This screen will have a loading screen when the face alignment algorithm is happening
+    # THIS NEEDS TO RUN WITH MULTITHREADING(?)
+    def resizingPictureProcessing(self):
+        self.resizeSelectedPictureProcessing.setWindowTitle("Unique Facial Feature Detection")
+        self.resizeSelectedPictureProcessing.resize(575, 400)
+
+
+        # Add label to say what is happening
+        spinnerLabel = QLabel(self.resizeSelectedPictureProcessing)
+        spinnerLabel.setGeometry(QRect(270, 120, 30, 30))
+        spinnerLabel.setScaledContents(True)
+        spinner = QMovie("static/spinner.gif")
+        spinnerLabel.setMovie(spinner)
+        spinner.start()
+        
+
+
+    # This screen will show after, giving the option to the user to manually align
     def resizingPicture(self):
         self.resizeSelectedPicture.setWindowTitle("Unique Facial Feature Detection")
         self.resizeSelectedPicture.resize(575, 400)
-        
+       
+        # Outer layout
         resizingPictureLayout = QVBoxLayout()
 
-
         # Photo picked from user
-        resizingPictureDisplayLayout = QHBoxLayout()
+        self.croppedImg = QPixmap("")
+        self.resizingPictureDisplayLabel = QLabel(self.resizeSelectedPicture)
+        self.resizingPictureDisplayLabel.setAlignment(Qt.AlignCenter)
+        self.resizingPictureDisplayLabel.setStyleSheet("padding: 30px")
+        resizingPictureDisplayLayout = QVBoxLayout()
+        croppedTitle = QLabel(self.resizeSelectedPicture)
+        croppedTitle.setAlignment(Qt.AlignCenter)
+        croppedTitle.setStyleSheet("font: 14pt Century Gothic")
+        croppedTitle.setText("Your Cropped Photo:")
+
+        # SHOULD MAKE THIS WARNING A TOOLTIP WARNING
+        croppedWarning = QLabel(self.resizeSelectedPicture)
+        croppedWarning.setAlignment(Qt.AlignCenter)
+        croppedWarning.setStyleSheet("font: 10pt Century Gothic")
+        croppedWarning.setText("Note: Your photo will automatically adjust to 178x218")
+
+        resizingPictureDisplayLayout.addWidget(croppedTitle)
+        resizingPictureDisplayLayout.addWidget(croppedWarning)
+        resizingPictureDisplayLayout.addWidget(self.resizingPictureDisplayLabel) 
 
 
         # Buttons
         resizingPictureBtnLayout = QHBoxLayout()
-        repeatResizingPicture = QPushButton("Redo resize photo", self) 
+        repeatResizingPicture = QPushButton("Manually Crop Photo", self) 
         finishedResizingPhotoButton = QPushButton("Continue", self)
 
         resizingPictureBtnLayout.addWidget(repeatResizingPicture)
@@ -388,7 +471,8 @@ class UI(QWidget):
 
         
         self.resizeSelectedPicture.setLayout(resizingPictureLayout)
-
+    
+        repeatResizingPicture.clicked.connect(self.startFaceAlignmentManual)
         finishedResizingPhotoButton.clicked.connect(self.photoProcessingWindow)
 
         
@@ -586,7 +670,11 @@ class Controller(QMainWindow, UI):
     def choosePictureWindow(self):
         self.menu.setCurrentIndex(2)
 
-    def resizingPhotoWindow(self):
+    # REFER TO ABOVE ABOUT MULTITHREADING
+    # def resizingPhotoProcessingWindow(self):
+        # self.menu.setCurrentIndex(3)
+
+    def resizingProcessedWindow(self):
         self.menu.setCurrentIndex(3)
 
     # Choose for caricature or just a list
