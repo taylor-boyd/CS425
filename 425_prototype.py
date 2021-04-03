@@ -11,6 +11,7 @@ import time
 
 # TODO:
 # Only continue if valid webcam or valid picture is selected
+# Fix screen name convention (menuSelection, webcamSelection)..
 
 class UI(QWidget):
     def setup(self, Controller):
@@ -26,109 +27,233 @@ class UI(QWidget):
         self.menuSelection = QWidget()
         self.webcamSelection = QWidget()
         self.pictureSelection = QWidget()
+
+        # Make sure finalScreen ends up as last widget
+        self.photoProcessingScreen = QWidget()
+        self.photoProcessedScreen = QWidget()
+        self.featuresListScreen = QWidget()
+        self.caricatureCreationScreen = QWidget()
         self.finalScreen = QWidget()
 
         # Call the functions here
         self.beginningMenu()
         self.webcamConfiguration()
         self.photoSelection()
+        self.photoProcessing()
+        self.photoProcessed()
+        self.featuresList()
+        self.caricatureCreation()
         self.endScreen()
 
         # order matters!
         self.menu.addWidget(self.menuSelection)
         self.menu.addWidget(self.webcamSelection)
         self.menu.addWidget(self.pictureSelection)
+        self.menu.addWidget(self.photoProcessingScreen)
+        self.menu.addWidget(self.photoProcessedScreen)
+        self.menu.addWidget(self.featuresListScreen)
+        self.menu.addWidget(self.caricatureCreationScreen)
         self.menu.addWidget(self.finalScreen)
 
+    # menu selection
     def beginningMenu(self):
-        # This is in menu selection
-        # BELOW: originally 550, 400
+
         self.menuSelection.resize(575, 400)
 
-        self.mainLayout = QVBoxLayout()
+        mainLayout = QVBoxLayout()
 
-        self.mainMenuTitle = QLabel(self.menuSelection)
-        #BELOW: x val orig. 130, width val 300
-        self.mainMenuTitle.setGeometry(QRect(130, -30, 320, 200))
-        self.mainMenuTitle.setAlignment(Qt.AlignCenter)
-        self.mainMenuTitle.setStyleSheet("font: 14pt Century Gothic")
-        self.mainMenuTitle.setText("Start Menu")
+        mainMenuTitle = QLabel(self.menuSelection)
+        mainMenuTitle.setGeometry(QRect(130, -30, 320, 200))
+        mainMenuTitle.setAlignment(Qt.AlignCenter)
+        mainMenuTitle.setStyleSheet("font: 14pt Century Gothic")
+        mainMenuTitle.setText("Start Menu")
         
 
         self.menuSelection.setWindowTitle("Unique Facial Feature Detection")
-        self.CameraSettings = QPushButton('Camera Settings', self)
-        self.CameraSettings.setToolTip('Change camera settings')
+        CameraSettings = QPushButton('Camera Settings', self)
+        CameraSettings.setToolTip('Change camera settings')
 
-        # CameraSettings.clicked.connect(self.buttonClicked)
+        ChoosePicture = QPushButton("Choose from files", self)
+        ChoosePicture.setToolTip('Choose picture')
 
-        self.ChoosePicture = QPushButton("Choose from files", self)
-        self.ChoosePicture.setToolTip('Choose picture')
+        # Menu buttons
+        CameraSettings.clicked.connect(self.configureWebcamWindow)
+        ChoosePicture.clicked.connect(self.choosePictureWindow)
 
-        self.buttonLayout = QHBoxLayout()
-        self.buttonLayout.addWidget(self.CameraSettings)
-        self.buttonLayout.addWidget(self.ChoosePicture)
+        buttonLayout = QHBoxLayout()
+        buttonLayout.addWidget(CameraSettings)
+        buttonLayout.addWidget(ChoosePicture)
         
-        self.quitButton = QPushButton('Quit', self)
-        self.quitButton.clicked.connect(QApplication.instance().quit)
-        self.buttonLayout.addWidget(self.quitButton)
-        self.mainLayout.addLayout(self.buttonLayout)
-        self.menuSelection.setLayout(self.mainLayout)
+        quitButton = QPushButton('Quit', self)
+        quitButton.clicked.connect(QApplication.instance().quit)
+        buttonLayout.addWidget(quitButton)
+        mainLayout.addLayout(buttonLayout)
+        self.menuSelection.setLayout(mainLayout)
 
     def webcamConfiguration(self):
 
         self.webcamSelection.setWindowTitle("Unique Facial Feature Detection")
-        # BELOW: originally 550, 400
         self.webcamSelection.resize(575, 400)
 
-        self.webcamLayout = QHBoxLayout()
+        # setting style sheet 
+        self.setStyleSheet("background : lightgrey;") 
+  
+        # getting available cameras 
+        self.available_cameras = QCameraInfo.availableCameras() 
+  
+        # if no camera found 
+        if not self.available_cameras: 
+            # exit the code 
+            pass
+  
+        # creating a status bar 
+        self.status = QStatusBar() 
+  
+        # setting style sheet to the status bar 
+        self.status.setStyleSheet("background : white;") 
+  
+        # adding status bar to the main window 
+        self.setStatusBar(self.status) 
+  
+        # path to save 
+        self.save_path = "" 
+  
+        # creating a QCameraViewfinder object 
+        self.viewfinder = QCameraViewfinder() 
+  
+        # showing this viewfinder 
+        #self.viewfinder.show() 
+  
+        # making it central widget of main window 
+        #self.setCentralWidget(self.viewfinder) 
+  
+        # Set the default camera. 
+        self.select_camera(0) 
+  
+        # creating a tool bar 
+        toolbar = QToolBar("Camera Tool Bar") 
+  
+        # adding tool bar to main window 
+        self.addToolBar(toolbar) 
 
-        self.available_cameras = QCameraInfo.availableCameras()
-        if not self.available_cameras:
-            pass #quit
+        # creating a show viewfinder action
+        show_viewfinder = QAction("Show", self)
 
-        self.status = QStatusBar()
-        self.setStatusBar(self.status)
+        # add action to it
+        show_viewfinder.triggered.connect(self.show_cam)
 
-        self.save_path = ""
+        # adding it to tool bar
+        toolbar.addAction(show_viewfinder)
+  
+        # creating a photo action to take photo 
+        click_action = QAction("Click photo", self) 
+  
+        # adding status tip to the photo action 
+        click_action.setStatusTip("This will capture picture") 
+  
+        # adding tool tip 
+        click_action.setToolTip("Capture picture") 
+  
+  
+        # adding action to it 
+        # calling take_photo method 
+        click_action.triggered.connect(self.click_photo) 
+  
+        # adding this to the tool bar 
+        toolbar.addAction(click_action) 
+  
+        # similarly creating action for changing save folder 
+        change_folder_action = QAction("Change save location", self) 
+  
+        # adding status tip 
+        change_folder_action.setStatusTip("Change folder where picture will be saved saved.") 
+  
+        # adding tool tip to it 
+        change_folder_action.setToolTip("Change save location") 
+  
+        # setting calling method to the change folder action 
+        # when triggered signal is emitted 
+        change_folder_action.triggered.connect(self.change_folder) 
+  
+        # adding this to the tool bar 
+        toolbar.addAction(change_folder_action) 
+  
+  
+        # creating a combo box for selecting camera 
+        camera_selector = QComboBox() 
+  
+        # adding status tip to it 
+        camera_selector.setStatusTip("Choose camera to take pictures") 
+  
+        # adding tool tip to it 
+        camera_selector.setToolTip("Select Camera") 
+        camera_selector.setToolTipDuration(2500) 
+  
+        # adding items to the combo box 
+        camera_selector.addItems([camera.description() 
+                                  for camera in self.available_cameras]) 
+  
+        # adding action to the combo box 
+        # calling the select camera method 
+        camera_selector.currentIndexChanged.connect(self.select_camera) 
+  
+        # adding this to tool bar 
+        toolbar.addWidget(camera_selector) 
+  
+        # setting tool bar stylesheet 
+        toolbar.setStyleSheet("background : white;") 
+  
+        webcamLayout = QHBoxLayout()
+        webcamLayout.addWidget(self.menuButton) # back to main menu button
 
-        self.viewfinder = QCameraViewfinder()
-        self.viewfinder.show()
-        self.setCentralWidget(self.viewfinder)
+        continueSelectedWebcam = QPushButton("Continue", self)
+        continueSelectedWebcam.clicked.connect(self.photoProcessingWindow)
 
-        # Set the default camera.
-        self.select_camera(0)
+        webcamLayout.addWidget(continueSelectedWebcam)
+        self.webcamSelection.setLayout(webcamLayout)
 
-        # Setup tools
-        camera_toolbar = QToolBar("Camera")
-        camera_toolbar.setIconSize(QSize(14, 14))
-        self.addToolBar(camera_toolbar)
+    # method to show viewfinder
+    def show_cam(self):
+        # showing this viewfinder 
+        self.viewfinder.show() 
+  
+        # making it central widget of main window 
+        self.setCentralWidget(self.viewfinder) 
 
-        camera_selector = QComboBox()
-        camera_selector.addItems([c.description() for c in self.available_cameras])
-        camera_selector.currentIndexChanged.connect( self.select_camera )
-
-        camera_toolbar.addWidget(camera_selector)
-
-        self.webcamLayout.addWidget(self.menuButton) # back to main menu button
-
-        self.continueSelectedWebcam = QPushButton("Continue", self)
-        self.webcamLayout.addWidget(self.continueSelectedWebcam)
-
-        self.webcamSelection.setLayout(self.webcamLayout)
-        #self.show()
-
-    def select_camera(self, i):
-        self.camera = QCamera(self.available_cameras[i])
-        self.camera.setViewfinder(self.viewfinder)
-        self.camera.setCaptureMode(QCamera.CaptureStillImage)
-        self.camera.error.connect(lambda: self.alert(self.camera.errorString()))
-        self.camera.start()
-
-        self.capture = QCameraImageCapture(self.camera)
-        self.capture.error.connect(lambda i, e, s: self.alert(s))
-        self.capture.imageCaptured.connect(lambda d, i: self.status.showMessage("Image %04d captured" % self.save_seq))
-
-        self.current_camera_name = self.available_cameras[i].description()
+    # method to select camera 
+    def select_camera(self, i): 
+  
+        # getting the selected camera 
+        self.camera = QCamera(self.available_cameras[i]) 
+  
+        # setting view finder to the camera 
+        self.camera.setViewfinder(self.viewfinder) 
+  
+        # setting capture mode to the camera 
+        self.camera.setCaptureMode(QCamera.CaptureStillImage) 
+  
+        # if any error occur show the alert 
+        self.camera.error.connect(lambda: self.alert(self.camera.errorString())) 
+  
+        # start the camera 
+        self.camera.start() 
+  
+        # creating a QCameraImageCapture object 
+        self.capture = QCameraImageCapture(self.camera) 
+  
+        # showing alert if error occur 
+        self.capture.error.connect(lambda error_msg, error, 
+                                   msg: self.alert(msg)) 
+  
+        # when image captured showing message 
+        self.capture.imageCaptured.connect(lambda d, 
+                                           i: self.status.showMessage("Image captured : " 
+                                                                      + str(self.save_seq))) 
+  
+        # getting current camera name 
+        self.current_camera_name = self.available_cameras[i].description() 
+  
+        # inital save sequence 
         self.save_seq = 0
   
     # method to take photo 
@@ -178,32 +303,33 @@ class UI(QWidget):
     def photoSelection(self):
 
         self.pictureSelection.setWindowTitle("Unique Facial Feature Detection")
-        # BELOW: originally 550, 400
+
         self.pictureSelection.resize(575, 400)
 
-        # 320, 220
+        pictureSelectionLayout = QHBoxLayout()
+        pictureSelectionMainMenu = QVBoxLayout()
+        pictureSelectionMainMenu.addWidget(self.menuButton2)
 
-        self.pictureSelectionLayout = QHBoxLayout()
-        self.pictureSelectionMainMenu = QVBoxLayout()
-        self.pictureSelectionMainMenu.addWidget(self.menuButton2)
+        selectPhotoButton = QPushButton("Select a picture", self)
+        selectedPhotoContinue = QPushButton("Continue: ", self)
+        pictureSelectionLayout.addWidget(selectPhotoButton)
+        pictureSelectionLayout.addWidget(selectedPhotoContinue)
 
-        self.selectPhotoButton = QPushButton("Select a picture", self)
-        self.selectedPhotoContinue = QPushButton("Continue: ", self)
-        self.pictureSelectionLayout.addWidget(self.selectPhotoButton)
-        self.pictureSelectionLayout.addWidget(self.selectedPhotoContinue)
+        # Select photo button
+        selectPhotoButton.clicked.connect(self.openPhoto)
+        selectedPhotoContinue.clicked.connect(self.photoProcessingWindow)
 
-
-        self.selectedPhotoHelper = QLabel(self.pictureSelection)
+        selectedPhotoHelper = QLabel(self.pictureSelection)
         self.selectedPictureName = QLabel(self.pictureSelection)
-        self.selectedPhotoHelper.setGeometry(QRect(160, -60, 300, 200))
-        self.selectedPhotoHelper.setStyleSheet("font: 14pt Century Gothic")
-        self.selectedPhotoHelper.setText("Selected photo is: ")
+        selectedPhotoHelper.setGeometry(QRect(160, -60, 300, 200))
+        selectedPhotoHelper.setStyleSheet("font: 14pt Century Gothic")
+        selectedPhotoHelper.setText("Selected photo is: ")
 
         # TODO: 
         # Add a gridlayout to separate return menu option
 
-        self.pictureSelectionLayout.addLayout(self.pictureSelectionMainMenu)
-        self.pictureSelection.setLayout(self.pictureSelectionLayout)
+        pictureSelectionLayout.addLayout(pictureSelectionMainMenu)
+        self.pictureSelection.setLayout(pictureSelectionLayout)
 
     # Choose a file
     def openPhoto(self):
@@ -224,26 +350,169 @@ class UI(QWidget):
 
     def endScreen(self):
         self.finalScreen.setWindowTitle("Unique Facial Feature Detection")
-        # BELOW: originally 550, 400
         self.finalScreen.resize(575, 400)
 
-        self.finalScreenBtnLayout = QHBoxLayout()
-        self.menuButtonFinal = QPushButton("Restart")
-        self.exitBtn = QPushButton("Quit")
+        finalScreenBtnLayout = QHBoxLayout()
+        menuButtonFinal = QPushButton("Restart")
+        exitBtn = QPushButton("Quit")
 
-        self.finalScreenBtnLayout.addWidget(self.menuButtonFinal)
-        self.finalScreenBtnLayout.addWidget(self.exitBtn)
+        finalScreenBtnLayout.addWidget(menuButtonFinal)
+        finalScreenBtnLayout.addWidget(exitBtn)
         
 
-        self.finalScreenText = QLabel(self.finalScreen)
-        self.finalScreenText.setStyleSheet("font: 14pt Century Gothic")
-        self.finalScreenText.setText("Would you like to try again?")
-        self.finalScreenText.setGeometry(QRect(30, -10, 500, 200))
-        self.finalScreenText.setAlignment(Qt.AlignCenter)
+        finalScreenText = QLabel(self.finalScreen)
+        finalScreenText.setStyleSheet("font: 14pt Century Gothic")
+        finalScreenText.setText("Would you like to try again?")
+        finalScreenText.setGeometry(QRect(30, -10, 500, 200))
+        finalScreenText.setAlignment(Qt.AlignCenter)
 
-        self.finalScreen.setLayout(self.finalScreenBtnLayout)
+        # Final screen buttons
+        menuButtonFinal.clicked.connect(self.menuWindow)
+        exitBtn.clicked.connect(self.exitProgram)
+      
+
+        self.finalScreen.setLayout(finalScreenBtnLayout)
+
+    # MIGHT NOT EVEN NEED IF PROCESSING IS TOO FAST
+    def photoProcessing(self):
+        self.photoProcessingScreen.setWindowTitle("Unique Facial Feature Detection")
+        self.photoProcessingScreen.resize(575, 400)
+
+        photoProcessingBtnLayout = QHBoxLayout()
+
+        # Spinner animation
+        spinnerLabel = QLabel(self.photoProcessingScreen)
+        spinnerLabel.setGeometry(QRect(270, 120, 30, 30))
+        spinnerLabel.setScaledContents(True)
+        spinner = QMovie("static/spinner.gif")
+        spinnerLabel.setMovie(spinner)
+        spinner.start()
+
+        obtainingFeaturesText = QLabel(self.photoProcessingScreen)
+        obtainingFeaturesText.setStyleSheet("font: 14pt Century Gothic")
+        obtainingFeaturesText.setText("Obtaining unique features...")
+        obtainingFeaturesText.setGeometry(QRect(30, -10, 500, 200))
+        obtainingFeaturesText.setAlignment(Qt.AlignCenter)
+
+        photoProcessedBtn = QPushButton("Continue") 
+        photoProcessingBtnLayout.addWidget(photoProcessedBtn)
+
+        photoProcessedBtn.clicked.connect(self.photoProcessedWindow)
 
 
+        self.photoProcessingScreen.setLayout(photoProcessingBtnLayout)
+        
+
+
+        #TODO:
+        # Only put continue if features have been extracted
+        # Allow back button??
+
+        # spinner.stop()
+
+    # Menu to choose feature list or create a caricature
+    def photoProcessed(self):
+        self.photoProcessedScreen.setWindowTitle("Unique Facial Feature Detection")
+        self.photoProcessedScreen.resize(575, 400)
+
+        obtainedFeaturesText= QLabel(self.photoProcessedScreen)
+        obtainedFeaturesText.setStyleSheet("font: 14pt Century Gothic")
+        obtainedFeaturesText.setText("Obtained unique features!")
+        obtainedFeaturesText.setGeometry(QRect(30, -10, 500, 200))
+        obtainedFeaturesText.setAlignment(Qt.AlignCenter)
+
+
+        # Two buttons here for Feature List or Caricature
+        photoProcessedBtnLayout = QHBoxLayout()
+        getFeaturesListBtn = QPushButton("Get unique feature's list!")
+        createCaricatureBtn = QPushButton("Create a caricature!")
+
+        photoProcessedBtnLayout.addWidget(getFeaturesListBtn)
+        photoProcessedBtnLayout.addWidget(createCaricatureBtn)
+
+        getFeaturesListBtn.clicked.connect(self.featuresListWindow)
+        createCaricatureBtn.clicked.connect(self.caricatureCreationWindow)
+
+        self.photoProcessedScreen.setLayout(photoProcessedBtnLayout)
+
+    # Display feature list
+    def featuresList(self):
+        self.featuresListScreen.setWindowTitle("Unique Facial Feature Detection")
+        self.featuresListScreen.resize(575, 400)
+
+        featuresLayout = QVBoxLayout()
+        # Hold save and continue button
+        featuresBtnLayout = QHBoxLayout()
+
+        obtainedFeaturesList = QLabel(self.photoProcessedScreen)
+        obtainedFeaturesList.setStyleSheet("font: 14pt Century Gothic")
+        obtainedFeaturesList.setText("Your unique features!")
+        # obtainedFeaturesList.setGeometry(QRect(30, -10, 500, 200))
+        obtainedFeaturesList.setAlignment(Qt.AlignCenter)
+
+        featuresLayout.addWidget(obtainedFeaturesList)
+
+
+        # Display features
+
+        featuresList = QPixmap("static/SampleFeatures")
+
+        featuresListLabel = QLabel(self.photoProcessedScreen)
+        featuresListLabel.setPixmap(featuresList)
+
+        featuresLayout.addWidget(featuresListLabel)
+
+
+        # Allow save option
+        # Save in .txt format is probably preferable
+        # saveListBtn does nothing for now, will implement when we tie in unique algorithm
+        saveListBtn = QPushButton("Save unique features list")
+        continueBtn = QPushButton("Continue")
+
+        featuresBtnLayout.addWidget(saveListBtn)
+        featuresBtnLayout.addWidget(continueBtn)
+
+        # Go to end screen
+        continueBtn.clicked.connect(self.goToEndWindow)
+
+        featuresLayout.addLayout(featuresBtnLayout)
+        self.featuresListScreen.setLayout(featuresLayout)
+
+    def caricatureCreation(self):
+        # TODO:
+        # Shorten names pleeeeeeeeeeeeeeeeeeeeez
+
+        self.caricatureCreationScreen.setWindowTitle("Unique Facial Feature Detection")
+        self.caricatureCreationScreen.resize(575, 400)
+
+        caricatureCreationLayout = QVBoxLayout()
+        caricatureCreationBtnLayout = QHBoxLayout()
+
+        createdCaricatureText = QLabel(self.photoProcessedScreen)
+        createdCaricatureText.setStyleSheet("font: 14pt Century Gothic")
+        createdCaricatureText.setText("Your caricature!")
+        # obtainedFeaturesList.setGeometry(QRect(30, -10, 500, 200))
+        createdCaricatureText.setAlignment(Qt.AlignCenter)
+
+        caricatureCreationLayout.addWidget(createdCaricatureText)
+
+        createdCaricature = QPixmap("static/SampleCaricature")
+        createdCaricatureLabel = QLabel(self.caricatureCreationScreen)
+        createdCaricatureLabel.setAlignment(Qt.AlignCenter)
+        createdCaricatureLabel.setPixmap(createdCaricature)
+
+
+        caricatureCreationLayout.addWidget(createdCaricatureLabel)
+
+        saveListBtn = QPushButton("Save caricature")
+        continueBtn = QPushButton("Continue")
+
+        caricatureCreationBtnLayout.addWidget(saveListBtn)
+        caricatureCreationBtnLayout.addWidget(continueBtn)
+
+        continueBtn.clicked.connect(self.goToEndWindow)
+        caricatureCreationLayout.addLayout(caricatureCreationBtnLayout)
+        self.caricatureCreationScreen.setLayout(caricatureCreationLayout)
 
 class Controller(QMainWindow, UI):
     def __init__(self):
@@ -255,25 +524,12 @@ class Controller(QMainWindow, UI):
         
         # Sends back to main menu
         # Need separate widget for each window
+        # TODO: Figure out how to only have 1 menu button
+
         self.menuButton.clicked.connect(self.menuWindow)
         self.menuButton2.clicked.connect(self.menuWindow)
 
-        # Menu buttons
-        self.CameraSettings.clicked.connect(self.configureWebcamWindow)
-        self.ChoosePicture.clicked.connect(self.choosePictureWindow)
-
-        # Select photo button
-        self.selectPhotoButton.clicked.connect(self.openPhoto)
-
-        # Continue with selected photo 
-        # TODO: CHANGE ENDSCREEN TO PHOTO PROCESSESSING
-        self.continueSelectedWebcam.clicked.connect(self.goToEndScreen)
-        self.selectedPhotoContinue.clicked.connect(self.goToEndScreen)
-
-        # Final screen buttons
-        self.menuButtonFinal.clicked.connect(self.menuWindow)
-        self.exitBtn.clicked.connect(self.exitProgram)
-        
+       
         
     def menuWindow(self):
         self.menu.setCurrentIndex(0)
@@ -285,13 +541,34 @@ class Controller(QMainWindow, UI):
     def choosePictureWindow(self):
         self.menu.setCurrentIndex(2)
 
-    def goToEndScreen(self):
+    # Choose for caricature or just a list
+    def photoProcessingWindow(self):
         self.menu.setCurrentIndex(3)
+
+    def photoProcessedWindow(self):
+        self.menu.setCurrentIndex(4)
+
+    def featuresListWindow(self):
+        self.menu.setCurrentIndex(5)
+
+    def caricatureCreationWindow(self):
+        self.menu.setCurrentIndex(6)
+
+    def goToEndWindow(self):
+        self.menu.setCurrentIndex(7)
+     
+
 
     def exitProgram(self):
         sys.exit()
 
 if __name__ == '__main__':
+
+    # create pyqt app
     app = QApplication(sys.argv)
+
+    # create instance of controller() window
     ex = Controller()
+
+    # start the app
     sys.exit(app.exec_())
