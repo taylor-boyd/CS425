@@ -130,6 +130,50 @@ class UI(QWidget):
 
         self.current_camera_name = self.available_cameras[i].description()
         self.save_seq = 0
+  
+    # method to take photo 
+    def click_photo(self): 
+  
+        # time stamp 
+        timestamp = time.strftime("%d-%b-%Y-%H_%M_%S") 
+  
+        # capture the image and save it on the save path 
+        self.capture.capture(os.path.join(self.save_path,  
+                                          "%s-%04d-%s.jpg" % ( 
+            self.current_camera_name, 
+            self.save_seq, 
+            timestamp 
+        ))) 
+  
+        # increment the sequence 
+        self.save_seq += 1
+
+        #webcamConfiguration.exit()
+  
+    # change folder method 
+    def change_folder(self): 
+  
+        # open the dialog to select path 
+        path = QFileDialog.getExistingDirectory(self,  
+                                                "Picture Location", "") 
+  
+        # if path is selected 
+        if path: 
+  
+            # update the path 
+            self.save_path = path 
+  
+            # update the sequence 
+            self.save_seq = 0
+  
+    # method for alerts 
+    def alert(self, msg): 
+  
+        # error message 
+        error = QErrorMessage(self) 
+  
+        # setting text to the error message 
+        error.showMessage(msg)
 
     def photoSelection(self):
 
