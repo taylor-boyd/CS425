@@ -214,6 +214,7 @@ class UI(QWidget):
 
     # method to show viewfinder
     def show_cam(self):
+
         # showing this viewfinder 
         self.viewfinder.show() 
   
@@ -430,10 +431,50 @@ class UI(QWidget):
         photoProcessedBtnLayout.addWidget(getFeaturesListBtn)
         photoProcessedBtnLayout.addWidget(createCaricatureBtn)
 
-        getFeaturesListBtn.clicked.connect(self.featuresListWindow)
+        getFeaturesListBtn.clicked.connect(self.outputtingList) # orig. featuresListWindow
         createCaricatureBtn.clicked.connect(self.caricatureCreationWindow)
 
         self.photoProcessedScreen.setLayout(photoProcessedBtnLayout)
+
+    # outputs list of unique features
+    def outputtingList(self):
+        self.featuresListWindow()
+        outputListLayout = self.featuresListScreen.layout()
+        # Hold save and continue button
+        featuresBtnLayout = QHBoxLayout()
+        
+        # open .txt file with features
+        inputTextFileName = './static/features.txt'
+        inputTextFile = open(inputTextFileName, "r")
+
+        # read features from .txt file
+        listOfFeatures = inputTextFile.read()
+        
+        # display list of unique features
+        actualFeaturesList = QLabel(self.photoProcessedScreen)
+        actualFeaturesList.setStyleSheet("font: 10pt Century Gothic")
+        actualFeaturesList.setText(listOfFeatures)  # change parameter to be self.uniqueFeatureList ?
+        actualFeaturesList.setWordWrap(True)
+        actualFeaturesList.setAlignment(Qt.AlignCenter)
+        outputListLayout.addWidget(actualFeaturesList)
+
+        # close .txt file
+        inputTextFile.close()
+        
+        # Allow save option
+        # Save in .txt format is probably preferable
+        # saveListBtn does nothing for now, will implement when we tie in unique algorithm
+        saveListBtn = QPushButton("Save unique features list")
+        continueBtn = QPushButton("Continue")
+
+        featuresBtnLayout.addWidget(saveListBtn)
+        featuresBtnLayout.addWidget(continueBtn)
+
+        # Go to end screen
+        continueBtn.clicked.connect(self.goToEndWindow)
+
+        outputListLayout.addLayout(featuresBtnLayout)
+        self.featuresListScreen.setLayout(outputListLayout)
 
     # Display feature list
     def featuresList(self):
@@ -453,8 +494,10 @@ class UI(QWidget):
         featuresLayout.addWidget(obtainedFeaturesList)
 
 
-        # Display features
+        # Features are displayed in outputtingList
+        # Buttons are added in outputtingList to maintain order of widgets
 
+        '''
         featuresList = QPixmap("static/SampleFeatures")
 
         featuresListLabel = QLabel(self.photoProcessedScreen)
@@ -476,6 +519,8 @@ class UI(QWidget):
         continueBtn.clicked.connect(self.goToEndWindow)
 
         featuresLayout.addLayout(featuresBtnLayout)
+        '''
+
         self.featuresListScreen.setLayout(featuresLayout)
 
     def caricatureCreation(self):
@@ -557,8 +602,6 @@ class Controller(QMainWindow, UI):
     def goToEndWindow(self):
         self.menu.setCurrentIndex(7)
      
-
-
     def exitProgram(self):
         sys.exit()
 
