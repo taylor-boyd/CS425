@@ -181,7 +181,7 @@ class UI(QWidget):
         # Select photo button
         selectPhotoButton.clicked.connect(self.openPhoto)
         # TODO: Run selected photo through backend
-        selectedPhotoContinue.clicked.connect(self.photoProcessingWindow)
+        selectedPhotoContinue.clicked.connect(self.startPhotoProcessing)   # orig. photoProcessingWindow
         
         selectedPhotoHelper = QLabel(self.pictureSelection)
         self.selectedPictureName = QLabel(self.pictureSelection)
@@ -195,6 +195,34 @@ class UI(QWidget):
         pictureSelectionLayout.addLayout(pictureSelectionMainMenu)
         self.pictureSelection.setLayout(pictureSelectionLayout)
 
+    # Run photo through backend
+    def startPhotoProcessing(self):
+        self.photoProcessingWindow()
+        filename = QTextDocument(self.selectedPictureName.text())
+        textFileName = filename.toPlainText()
+
+        # get actual photo file name without end punctuation
+        afterFirstApost = textFileName.find('\'') + 1
+        lastApost = len(textFileName) - 2
+        actualFileName = textFileName[afterFirstApost:lastApost]
+        print(actualFileName)
+
+        # old way of calling shape_predict.py, can probably delete; returns 0 on success
+        # self.uniqueFeatureList = os.system('python backend/shape_predict.py ' + actualFileName)
+
+        # run shape_predict.py with actualFileName
+        proc = subprocess.Popen(["python", "backend/shape_predict.py", actualFileName], stdout=subprocess.PIPE, shell=True)
+        (out, err) = proc.communicate()
+        self.uniqueFeatureList = out.decode("utf-8")
+        # print ("UNIQUE FEATURES:", self.uniqueFeatureList)
+        
+        # write feature list to a .txt file - currently creates and overwrites the same file
+        # TODO: consider how it'll work with different files
+        outputTextFileName = './static/features.txt'
+        outputTextFile = open(outputTextFileName, "w")
+        outputTextFile.write(self.uniqueFeatureList)
+        outputTextFile.close()
+
     # Choose a file
     def openPhoto(self):
         # options = QFileDialog.Options()
@@ -206,35 +234,6 @@ class UI(QWidget):
             self.selectedPictureName.setStyleSheet("font: 10pt Century Gothic")
             self.selectedPictureName.setText(str(files))
 
-            # print("setText: ", self.selectedPictureName.text())  # TODO: delete this test later
-            # print(type(self.selectedPictureName))
-
-            filename = QTextDocument(self.selectedPictureName.text())
-            textFileName = filename.toPlainText()
-
-            # get actual photo file name without end punctuation
-            afterFirstApost = textFileName.find('\'') + 1
-            lastApost = len(textFileName) - 2
-            actualFileName = textFileName[afterFirstApost:lastApost]
-            print(actualFileName)
-
-            # old way of calling shape_predict.py, can probably delete; returns 0 on success
-            # self.uniqueFeatureList = os.system('python backend/shape_predict.py ' + actualFileName)
-
-            # run shape_predict.py with actualFileName
-            proc = subprocess.Popen(["python", "backend/shape_predict.py", actualFileName], stdout=subprocess.PIPE, shell=True)
-            (out, err) = proc.communicate()
-            self.uniqueFeatureList = out.decode("utf-8")
-            print ("UNIQUE FEATURES:", self.uniqueFeatureList)
-
-            # TODO: Try testing open pic with PIL Image
-            # im1 = Image.open(str(files))
-
-            # TODO: Implement picture preview
-            # self.picturePreview = QPixmap(str(files))
-            # self.selectedPictureName.setPixmap(self.picturePreview)
-            # self.setCentralWidget(self.selectedPictureName)
-            # self.resize(self.picturePreview.width(), self.picturePreview.height())
 
     def endScreen(self):
         self.finalScreen.setWindowTitle("Unique Facial Feature Detection")
@@ -310,7 +309,6 @@ class UI(QWidget):
         obtainedFeaturesText.setGeometry(QRect(30, -10, 500, 200))
         obtainedFeaturesText.setAlignment(Qt.AlignCenter)
 
-
         # Two buttons here for Feature List or Caricature
         photoProcessedBtnLayout = QHBoxLayout()
         getFeaturesListBtn = QPushButton("Get unique feature's list!")
@@ -319,10 +317,51 @@ class UI(QWidget):
         photoProcessedBtnLayout.addWidget(getFeaturesListBtn)
         photoProcessedBtnLayout.addWidget(createCaricatureBtn)
 
-        getFeaturesListBtn.clicked.connect(self.featuresListWindow)
+        getFeaturesListBtn.clicked.connect(self.outputtingList) # orig. featuresListWindow
         createCaricatureBtn.clicked.connect(self.caricatureCreationWindow)
 
         self.photoProcessedScreen.setLayout(photoProcessedBtnLayout)
+
+    # outputs list of unique features
+    def outputtingList(self):
+        self.featuresListWindow()
+        outputListLayout = self.featuresListScreen.layout()
+        # Hold save and continue button
+        featuresBtnLayout = QHBoxLayout()
+        
+        # open .txt file with features
+        inputTextFileName = './static/features.txt'
+        inputTextFile = open(inputTextFileName, "r")
+
+        # read features from .txt file
+        listOfFeatures = inputTextFile.read()
+        
+        # display list of unique features
+        actualFeaturesList = QLabel(self.photoProcessedScreen)
+        actualFeaturesList.setStyleSheet("font: 10pt Century Gothic")
+        actualFeaturesList.setText(listOfFeatures)  # change parameter to be self.uniqueFeatureList ?
+        actualFeaturesList.setWordWrap(True)
+        actualFeaturesList.setAlignment(Qt.AlignCenter)
+        outputListLayout.addWidget(actualFeaturesList)
+
+        # close .txt file
+        inputTextFile.close()
+        
+        # Allow save option
+        # Save in .txt format is probably preferable
+        # saveListBtn does nothing for now, will implement when we tie in unique algorithm
+        saveListBtn = QPushButton("Save unique features list")
+        continueBtn = QPushButton("Continue")
+
+        featuresBtnLayout.addWidget(saveListBtn)
+        featuresBtnLayout.addWidget(continueBtn)
+
+        # Go to end screen
+        continueBtn.clicked.connect(self.goToEndWindow)
+
+        outputListLayout.addLayout(featuresBtnLayout)
+        self.featuresListScreen.setLayout(outputListLayout)
+        
 
     # Display feature list
     def featuresList(self):
@@ -342,16 +381,19 @@ class UI(QWidget):
         featuresLayout.addWidget(obtainedFeaturesList)
 
 
-        # Display features
-        # TODO: get/output features from Bryson's code (backend) instead of static pic
+        # Features are displayed in outputtingList
+        # Buttons are added in outputtingList to maintain order of widgets
+        
+        '''
+        # orig. with picture of
         featuresList = QPixmap("static/SampleFeatures")
 
         featuresListLabel = QLabel(self.photoProcessedScreen)
         featuresListLabel.setPixmap(featuresList)
 
         featuresLayout.addWidget(featuresListLabel)
-
-
+        '''
+        '''
         # Allow save option
         # Save in .txt format is probably preferable
         # saveListBtn does nothing for now, will implement when we tie in unique algorithm
@@ -365,6 +407,7 @@ class UI(QWidget):
         continueBtn.clicked.connect(self.goToEndWindow)
 
         featuresLayout.addLayout(featuresBtnLayout)
+        '''
         self.featuresListScreen.setLayout(featuresLayout)
 
     def caricatureCreation(self):
