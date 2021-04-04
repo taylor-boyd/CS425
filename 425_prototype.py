@@ -8,10 +8,39 @@ from PyQt5.QtMultimediaWidgets import *
 import os
 import sys
 import time
+import cv2
+
+sys.path.append('./backend/')
+# Optimally but both functions into one file
+# Allow manual face alignment
+from FaceAlignmentv2 import FaceAlignmentManual
+# Allow algorithm to do it automatically
+from FaceAlignment import FaceAlignmentAuto
+
 
 # TODO:
 # Only continue if valid webcam or valid picture is selected
 # Fix screen name convention (menuSelection, webcamSelection)..
+
+# Notes:
+# Webcam photos save in default "photos" if folder isn't selected
+# Should save in folder where facial alignment algorithm would work
+# Don't show click button until camera is shown?
+# Flow -> Select a photo or webcam, send to facial alignment, finish in Bryson's Algorithm
+# Smaller image size than 500 kb? Currently have smaller than 1 MB
+# 
+
+# TODO:
+# IMPLEMENT MULTITHREADING SO PROGRAM WON'T FREEZE WHEN GETTING FACE ALIGNMENT
+# https://www.learnpyqt.com/tutorials/multithreading-pyqt-applications-qthreadpool/
+# class Worker(QRunnable):
+
+
+#    @pyqtSlot()
+#        def run(self):
+#        print ("hi")
+#        time.sleep(5)
+#        print ("complete")
 
 class UI(QWidget):
     def setup(self, Controller):
@@ -27,6 +56,8 @@ class UI(QWidget):
         self.menuSelection = QWidget()
         self.webcamSelection = QWidget()
         self.pictureSelection = QWidget()
+        self.resizeSelectedPictureProcessing = QWidget()
+        self.resizeSelectedPicture = QWidget()
 
         # Make sure finalScreen ends up as last widget
         self.photoProcessingScreen = QWidget()
@@ -39,6 +70,8 @@ class UI(QWidget):
         self.beginningMenu()
         self.webcamConfiguration()
         self.photoSelection()
+#        self.resizingPictureProcessing()
+        self.resizingPicture()
         self.photoProcessing()
         self.photoProcessed()
         self.featuresList()
@@ -49,6 +82,8 @@ class UI(QWidget):
         self.menu.addWidget(self.menuSelection)
         self.menu.addWidget(self.webcamSelection)
         self.menu.addWidget(self.pictureSelection)
+        # self.menu.addWidget(self.resizeSelectedPictureProcessing)
+        self.menu.addWidget(self.resizeSelectedPicture)
         self.menu.addWidget(self.photoProcessingScreen)
         self.menu.addWidget(self.photoProcessedScreen)
         self.menu.addWidget(self.featuresListScreen)
@@ -237,7 +272,7 @@ class UI(QWidget):
         self.camera.error.connect(lambda: self.alert(self.camera.errorString())) 
   
         # start the camera 
-        self.camera.start() 
+        # self.camera.start() 
   
         # creating a QCameraImageCapture object 
         self.capture = QCameraImageCapture(self.camera) 
@@ -307,47 +342,143 @@ class UI(QWidget):
 
         self.pictureSelection.resize(575, 400)
 
-        pictureSelectionLayout = QHBoxLayout()
-        pictureSelectionMainMenu = QVBoxLayout()
+        pictureSelectionLayout = QVBoxLayout()
+        pictureSelectionMainMenu = QHBoxLayout()
         pictureSelectionMainMenu.addWidget(self.menuButton2)
 
         selectPhotoButton = QPushButton("Select a picture", self)
         selectedPhotoContinue = QPushButton("Continue: ", self)
-        pictureSelectionLayout.addWidget(selectPhotoButton)
-        pictureSelectionLayout.addWidget(selectedPhotoContinue)
+        pictureSelectionMainMenu.addWidget(selectPhotoButton)
+        pictureSelectionMainMenu.addWidget(selectedPhotoContinue)
 
         # Select photo button
         selectPhotoButton.clicked.connect(self.openPhoto)
-        selectedPhotoContinue.clicked.connect(self.photoProcessingWindow)
+
+        # Go to resizing window
+        selectedPhotoContinue.clicked.connect(self.startFaceAlignmentAuto)
 
         selectedPhotoHelper = QLabel(self.pictureSelection)
         self.selectedPictureName = QLabel(self.pictureSelection)
+
         selectedPhotoHelper.setGeometry(QRect(160, -60, 300, 200))
         selectedPhotoHelper.setStyleSheet("font: 14pt Century Gothic")
         selectedPhotoHelper.setText("Selected photo is: ")
 
-        # TODO: 
-        # Add a gridlayout to separate return menu option
+        self.selectedPictureLocation = ""
+        
+        pictureDisplayLayout = QVBoxLayout()
+        pictureDisplayLayout.addWidget(selectedPhotoHelper)
+        pictureDisplayLayout.addWidget(self.selectedPictureName)
 
+        
+        pictureSelectionLayout.addLayout(pictureDisplayLayout)
         pictureSelectionLayout.addLayout(pictureSelectionMainMenu)
+
         self.pictureSelection.setLayout(pictureSelectionLayout)
 
+    def startFaceAlignmentAuto(self):
+        self.resizingProcessedWindow()
+        FaceAlignmentAuto(self.selectedPictureLocation)
+
+        # Setting the cropped img once FaceAlignment is done
+        # Need to think of this when we use multiple photos
+        self.croppedImg = QPixmap("./backend/ResizedImages/newCropped.jpeg")
+        self.resizingPictureDisplayLabel.setPixmap(self.croppedImg)
+        print(self.selectedPictureLocation)
+
+    def startFaceAlignmentManual(self):
+        FaceAlignmentManual(self.selectedPictureLocation)
+        # Resetting the photo on screen
+        self.croppedImg = QPixmap("./backend/ResizedImages/newCropped.jpeg")
+        self.resizingPictureDisplayLabel.setPixmap(self.croppedImg)
+        
+       
     # Choose a file
     def openPhoto(self):
         # options = QFileDialog.Options()
         files, _ = QFileDialog.getOpenFileNames(self,"QFileDialog.getOpenFileNames()", "","Image files (*.jpg *.png)")
         if files:
-            print(files)
             self.selectedPictureName.setGeometry(QRect(70, -30, 500, 200))
             self.selectedPictureName.setAlignment(Qt.AlignCenter)
             self.selectedPictureName.setStyleSheet("font: 10pt Century Gothic")
-            self.selectedPictureName.setText(str(files))
+            
+            picturePreview = QPixmap(files[0])
+            self.selectedPictureName.setPixmap(picturePreview.scaled(self.selectedPictureName.width() * 2, self.selectedPictureName.height() * 2, Qt.KeepAspectRatio))
 
-            # TODO: Implement picture preview
-            # self.picturePreview = QPixmap(str(files))
-            # self.selectedPictureName.setPixmap(self.picturePreview)
-            # self.setCentralWidget(self.selectedPictureName)
-            # self.resize(self.picturePreview.width(), self.picturePreview.height())
+            self.selectedPictureLocation = files[0]
+
+
+            
+            # Incorporate/mix Jazel's code here
+            # We send cropped photo through Jazel's code to send to Bryson's Algorithm
+
+
+    # This screen will have a loading screen when the face alignment algorithm is happening
+    # THIS NEEDS TO RUN WITH MULTITHREADING(?)
+    def resizingPictureProcessing(self):
+        self.resizeSelectedPictureProcessing.setWindowTitle("Unique Facial Feature Detection")
+        self.resizeSelectedPictureProcessing.resize(575, 400)
+
+
+        # Add label to say what is happening
+        spinnerLabel = QLabel(self.resizeSelectedPictureProcessing)
+        spinnerLabel.setGeometry(QRect(270, 120, 30, 30))
+        spinnerLabel.setScaledContents(True)
+        spinner = QMovie("static/spinner.gif")
+        spinnerLabel.setMovie(spinner)
+        spinner.start()
+        
+
+
+    # This screen will show after, giving the option to the user to manually align
+    def resizingPicture(self):
+        self.resizeSelectedPicture.setWindowTitle("Unique Facial Feature Detection")
+        self.resizeSelectedPicture.resize(575, 400)
+       
+        # Outer layout
+        resizingPictureLayout = QVBoxLayout()
+
+        # Photo picked from user
+        self.croppedImg = QPixmap("")
+        self.resizingPictureDisplayLabel = QLabel(self.resizeSelectedPicture)
+        self.resizingPictureDisplayLabel.setAlignment(Qt.AlignCenter)
+        self.resizingPictureDisplayLabel.setStyleSheet("padding: 30px")
+        resizingPictureDisplayLayout = QVBoxLayout()
+        croppedTitle = QLabel(self.resizeSelectedPicture)
+        croppedTitle.setAlignment(Qt.AlignCenter)
+        croppedTitle.setStyleSheet("font: 14pt Century Gothic")
+        croppedTitle.setText("Your Cropped Photo:")
+
+        # SHOULD MAKE THIS WARNING A TOOLTIP WARNING
+        croppedWarning = QLabel(self.resizeSelectedPicture)
+        croppedWarning.setAlignment(Qt.AlignCenter)
+        croppedWarning.setStyleSheet("font: 10pt Century Gothic")
+        croppedWarning.setText("Note: Your photo will automatically adjust to 178x218")
+
+        resizingPictureDisplayLayout.addWidget(croppedTitle)
+        resizingPictureDisplayLayout.addWidget(croppedWarning)
+        resizingPictureDisplayLayout.addWidget(self.resizingPictureDisplayLabel) 
+
+
+        # Buttons
+        resizingPictureBtnLayout = QHBoxLayout()
+        repeatResizingPicture = QPushButton("Manually Crop Photo", self) 
+        finishedResizingPhotoButton = QPushButton("Continue", self)
+
+        resizingPictureBtnLayout.addWidget(repeatResizingPicture)
+        resizingPictureBtnLayout.addWidget(finishedResizingPhotoButton)
+       
+
+        resizingPictureLayout.addLayout(resizingPictureDisplayLayout)
+        resizingPictureLayout.addLayout(resizingPictureBtnLayout)
+
+        
+        self.resizeSelectedPicture.setLayout(resizingPictureLayout)
+    
+        repeatResizingPicture.clicked.connect(self.startFaceAlignmentManual)
+        finishedResizingPhotoButton.clicked.connect(self.photoProcessingWindow)
+
+        
 
     def endScreen(self):
         self.finalScreen.setWindowTitle("Unique Facial Feature Detection")
@@ -586,21 +717,28 @@ class Controller(QMainWindow, UI):
     def choosePictureWindow(self):
         self.menu.setCurrentIndex(2)
 
-    # Choose for caricature or just a list
-    def photoProcessingWindow(self):
+    # REFER TO ABOVE ABOUT MULTITHREADING
+    # def resizingPhotoProcessingWindow(self):
+        # self.menu.setCurrentIndex(3)
+
+    def resizingProcessedWindow(self):
         self.menu.setCurrentIndex(3)
 
-    def photoProcessedWindow(self):
+    # Choose for caricature or just a list
+    def photoProcessingWindow(self):
         self.menu.setCurrentIndex(4)
 
-    def featuresListWindow(self):
+    def photoProcessedWindow(self):
         self.menu.setCurrentIndex(5)
 
-    def caricatureCreationWindow(self):
+    def featuresListWindow(self):
         self.menu.setCurrentIndex(6)
 
-    def goToEndWindow(self):
+    def caricatureCreationWindow(self):
         self.menu.setCurrentIndex(7)
+
+    def goToEndWindow(self):
+        self.menu.setCurrentIndex(8)
      
     def exitProgram(self):
         sys.exit()
