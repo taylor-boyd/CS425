@@ -658,12 +658,13 @@ class UI(QWidget):
         caricatureCreationLayout.addLayout(caricatureCreationBtnLayout)
         self.caricatureCreationScreen.setLayout(caricatureCreationLayout)
 
-    def saveList(self, results):
+    def saveList(self):
         name, _ = QFileDialog.getSaveFileName(self, 'Save File', "features.txt")
         file = open(name, 'w')
-        features = self.textEdit.toPlainText()
-        file.write(results)
+        global results
+        file.write(str(results))
         file.close()
+	
 	
     def savePhoto(self, input):
         name, _ = QFileDialog.getSaveFileName(self, 'Save File', "Image Files (*jpg *png)")
