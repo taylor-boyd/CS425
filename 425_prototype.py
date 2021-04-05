@@ -43,8 +43,9 @@ from shape_predict import ShapePredictor
 #        time.sleep(5)
 #        print ("complete")
 
-image = Image.open("test.png")
 results = "None"
+saveImage = 0
+path = "None"
 
 class UI(QWidget):
     def setup(self, Controller):
@@ -130,7 +131,8 @@ class UI(QWidget):
         self.menuSelection.setLayout(mainLayout)
 
     def webcamConfiguration(self):
-        self.saveImage = 0
+        global saveImage
+        saveImage = 0
         self.webcamSelection.setWindowTitle("Unique Facial Feature Detection")
         self.webcamSelection.resize(575, 400)
 
@@ -297,13 +299,12 @@ class UI(QWidget):
   
     # method to take photo 
     def click_photo(self): 
-        global image
         # time stamp 
         timestamp = time.strftime("%d-%b-%Y-%H_%M_%S") 
   
         # capture the image and save it on the save path 
         self.capture.capture(os.path.join(self.save_path, "%s-%04d-%s.jpg" % (self.current_camera_name, self.save_seq, timestamp))) 
-        _, image = camera.read()
+        path = self.save_path + '/' + "%s-%04d-%s.jpg" % (self.current_camera_name, self.save_seq, timestamp)
         # increment the sequence 
         self.save_seq += 1
 
@@ -332,7 +333,8 @@ class UI(QWidget):
         error.showMessage(msg)
 
     def photoSelection(self):
-        self.saveImage = 1
+        global saveImage
+        saveImage = 1
         self.pictureSelection.setWindowTitle("Unique Facial Feature Detection")
 
         self.pictureSelection.resize(575, 400)
@@ -373,8 +375,8 @@ class UI(QWidget):
 
     def startFaceAlignmentAuto(self):
         self.resizingProcessedWindow()
-        global image
-        image = FaceAlignmentAuto(self.selectedPictureLocation)
+
+        self.images = FaceAlignmentAuto(self.selectedPictureLocation)
 
         # Setting the cropped img once FaceAlignment is done
         # Need to think of this when we use multiple photos
@@ -397,14 +399,13 @@ class UI(QWidget):
             self.selectedPictureName.setGeometry(QRect(70, -30, 500, 200))
             self.selectedPictureName.setAlignment(Qt.AlignCenter)
             self.selectedPictureName.setStyleSheet("font: 10pt Century Gothic")
+
             
             picturePreview = QPixmap(files[0])
+
             self.selectedPictureName.setPixmap(picturePreview.scaled(self.selectedPictureName.width() * 2, self.selectedPictureName.height() * 2, Qt.KeepAspectRatio))
 
             self.selectedPictureLocation = files[0]
-            global image
-            image = PIL.Image.open(files)
-
 
             
             # Incorporate/mix Jazel's code here
@@ -523,7 +524,11 @@ class UI(QWidget):
         obtainingFeaturesText.setText("Obtaining unique features...")
         predictor = ShapePredictor("model/shape_model", "shape-labels.txt")
         global results
-        results = predictor.process_image(image)
+        if saveImage == 1:
+            images = Image.open("./backend/ResizedImages/newCropped.jpeg")
+        else:
+            images = Image.open(path)
+        results = predictor.process_image(images)
         obtainingFeaturesText.setGeometry(QRect(30, -10, 500, 200))
         obtainingFeaturesText.setAlignment(Qt.AlignCenter)
 
@@ -603,18 +608,19 @@ class UI(QWidget):
         # Save in .txt format is probably preferable
         # saveListBtn does nothing for now, will implement when we tie in unique algorithm
         saveListBtn = QPushButton("Save unique features list")
-        if self.saveImage == 0:
+        if saveImage == 0:
             savePhotoBtn = QPushButton("Save Photo")
+            savePhotoBtn.clicked.connect(self.savePhoto(images))
         continueBtn = QPushButton("Continue")
 
         featuresBtnLayout.addWidget(saveListBtn)
-        if self.saveImage == 0:
+        if saveImage == 0:
             featuresBtnLayout.addWidget(savePhotoBtn())
         featuresBtnLayout.addWidget(continueBtn)
 	
 	# Save Features List
 	
-        saveListBtn.clicked.connect(self.saveList(results))
+        saveListBtn.clicked.connect(self.saveList)
 
         # Go to end screen
         continueBtn.clicked.connect(self.goToEndWindow)
@@ -665,11 +671,10 @@ class UI(QWidget):
         file.write(str(results))
         file.close()
 	
-	
     def savePhoto(self, input):
         name, _ = QFileDialog.getSaveFileName(self, 'Save File', "Image Files (*jpg *png)")
         file = Image.open(name, 'w')
-        file = Image.save(image)
+        file = Image.save(images)
         file.close()
 
 
