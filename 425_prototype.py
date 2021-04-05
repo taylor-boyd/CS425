@@ -130,8 +130,12 @@ class UI(QWidget):
         self.webcamSelection.setWindowTitle("Unique Facial Feature Detection")
         self.webcamSelection.resize(575, 400)
 
-        # setting style sheet 
-        self.setStyleSheet("background : lightgrey;") 
+        # create stacked layout
+        self.stackedLayout = QStackedLayout()
+
+        # create first page
+        self.p1 = QWidget()
+        self.p1Layout = QVBoxLayout()
   
         # getting available cameras 
         self.available_cameras = QCameraInfo.availableCameras() 
@@ -141,35 +145,20 @@ class UI(QWidget):
             # exit the code 
             pass
   
-        # creating a status bar 
-        self.status = QStatusBar() 
-  
-        # setting style sheet to the status bar 
-        self.status.setStyleSheet("background : white;") 
-  
-        # adding status bar to the main window 
-        self.setStatusBar(self.status) 
-  
         # path to save 
-        self.save_path = "" 
+        self.save_path = "backend/webcam_photos/" 
   
         # creating a QCameraViewfinder object 
         self.viewfinder = QCameraViewfinder() 
   
-        # showing this viewfinder 
-        #self.viewfinder.show() 
-  
-        # making it central widget of main window 
-        #self.setCentralWidget(self.viewfinder) 
-  
         # Set the default camera. 
-        self.select_camera(0) 
-  
+        self.select_camera(0)  
+
         # creating a tool bar 
         toolbar = QToolBar("Camera Tool Bar") 
   
         # adding tool bar to main window 
-        self.addToolBar(toolbar) 
+        self.p1Layout.addWidget(toolbar)
 
         # creating a show viewfinder action
         show_viewfinder = QAction("Show", self)
@@ -179,7 +168,7 @@ class UI(QWidget):
 
         # adding it to tool bar
         toolbar.addAction(show_viewfinder)
-  
+
         # creating a photo action to take photo 
         click_action = QAction("Click photo", self) 
   
@@ -189,30 +178,15 @@ class UI(QWidget):
         # adding tool tip 
         click_action.setToolTip("Capture picture") 
   
-  
         # adding action to it 
         # calling take_photo method 
         click_action.triggered.connect(self.click_photo) 
   
         # adding this to the tool bar 
         toolbar.addAction(click_action) 
-  
-        # similarly creating action for changing save folder 
-        change_folder_action = QAction("Change save location", self) 
-  
-        # adding status tip 
-        change_folder_action.setStatusTip("Change folder where picture will be saved saved.") 
-  
-        # adding tool tip to it 
-        change_folder_action.setToolTip("Change save location") 
-  
-        # setting calling method to the change folder action 
-        # when triggered signal is emitted 
-        change_folder_action.triggered.connect(self.change_folder) 
-  
-        # adding this to the tool bar 
-        toolbar.addAction(change_folder_action) 
-  
+
+        # setting tool bar stylesheet 
+        toolbar.setStyleSheet("background : white; color : black;") 
   
         # creating a combo box for selecting camera 
         camera_selector = QComboBox() 
@@ -232,29 +206,47 @@ class UI(QWidget):
         # calling the select camera method 
         camera_selector.currentIndexChanged.connect(self.select_camera) 
   
-        # adding this to tool bar 
+        # adding this to layout
         toolbar.addWidget(camera_selector) 
+
+        self.p1.setLayout(self.p1Layout)
+        self.stackedLayout.addWidget(self.p1)
+
+        # create second page
+        self.p2 = QWidget()
+        self.p2Layout = self.p1Layout
+
+        self.p2Layout.addWidget(self.viewfinder)
+
+        self.p2.setLayout(self.p2Layout)
+        self.stackedLayout.addWidget(self.p2)
+
+        self.stackedLayout.setCurrentIndex(1)
+
+        # create third page 
+        self.p3 = QWidget()
+        self.p3Layout = QVBoxLayout()
   
-        # setting tool bar stylesheet 
-        toolbar.setStyleSheet("background : white;") 
-  
-        webcamLayout = QHBoxLayout()
-        webcamLayout.addWidget(self.menuButton) # back to main menu button
+        self.p3Layout.addWidget(self.menuButton) # back to main menu button
 
         continueSelectedWebcam = QPushButton("Continue", self)
-        continueSelectedWebcam.clicked.connect(self.photoProcessingWindow)
+        continueSelectedWebcam.clicked.connect(self.startFaceAlignmentAuto)
+        self.p3Layout.addWidget(continueSelectedWebcam)
 
-        webcamLayout.addWidget(continueSelectedWebcam)
-        self.webcamSelection.setLayout(webcamLayout)
+        self.p3.setLayout(self.p3Layout)
+        self.stackedLayout.addWidget(self.p3)
+
+        # setting final layout
+        self.webcamSelection.setLayout(self.stackedLayout)
 
     # method to show viewfinder
     def show_cam(self):
 
-        # showing this viewfinder 
-        self.viewfinder.show() 
-  
-        # making it central widget of main window 
-        self.setCentralWidget(self.viewfinder) 
+        # start the camera
+        self.camera.start()
+
+        self.stackedLayout.setCurrentIndex(1)
+
 
     # method to select camera 
     def select_camera(self, i): 
@@ -272,7 +264,7 @@ class UI(QWidget):
         self.camera.error.connect(lambda: self.alert(self.camera.errorString())) 
   
         # start the camera 
-        # self.camera.start() 
+        #self.camera.start() 
   
         # creating a QCameraImageCapture object 
         self.capture = QCameraImageCapture(self.camera) 
@@ -305,27 +297,18 @@ class UI(QWidget):
             self.save_seq, 
             timestamp 
         ))) 
+
+        self.selectedPictureLocation = os.path.join(self.save_path, 
+                                                    "%s-%04d-%s.jpg" % (
+            self.current_camera_name,
+            self.save_seq,
+            timestamp
+                                                    ))
   
         # increment the sequence 
         self.save_seq += 1
 
-        #webcamConfiguration.exit()
-  
-    # change folder method 
-    def change_folder(self): 
-  
-        # open the dialog to select path 
-        path = QFileDialog.getExistingDirectory(self,  
-                                                "Picture Location", "") 
-  
-        # if path is selected 
-        if path: 
-  
-            # update the path 
-            self.save_path = path 
-  
-            # update the sequence 
-            self.save_seq = 0
+        self.stackedLayout.setCurrentIndex(2)
   
     # method for alerts 
     def alert(self, msg): 
@@ -379,6 +362,7 @@ class UI(QWidget):
     def startFaceAlignmentAuto(self):
         self.resizingProcessedWindow()
         FaceAlignmentAuto(self.selectedPictureLocation)
+        self.camera.stop()
 
         # Setting the cropped img once FaceAlignment is done
         # Need to think of this when we use multiple photos
@@ -712,7 +696,7 @@ class Controller(QMainWindow, UI):
 
     def configureWebcamWindow(self):
         self.menu.setCurrentIndex(1)
-        self.show()
+        #self.show()
 
     def choosePictureWindow(self):
         self.menu.setCurrentIndex(2)
