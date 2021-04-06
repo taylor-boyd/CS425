@@ -28,7 +28,10 @@ from FaceAlignment import FaceAlignmentAuto
 # Don't show click button until camera is shown?
 # Flow -> Select a photo or webcam, send to facial alignment, finish in Bryson's Algorithm
 # Smaller image size than 500 kb? Currently have smaller than 1 MB
-# 
+# Throw error for the above ^
+# When selecting "Back to menu" reset current image to ""
+# Add detailed screens to illustrate the flow and what is happening to the photos
+# Add guide for how to manually crop
 
 # TODO:
 # IMPLEMENT MULTITHREADING SO PROGRAM WON'T FREEZE WHEN GETTING FACE ALIGNMENT
@@ -93,20 +96,21 @@ class UI(QWidget):
     # menu selection
     def beginningMenu(self):
 
-        self.menuSelection.resize(575, 400)
+        self.menuSelection.resize(675, 400)
 
         mainLayout = QVBoxLayout()
 
         mainMenuTitle = QLabel(self.menuSelection)
-        mainMenuTitle.setGeometry(QRect(130, -30, 320, 200))
         mainMenuTitle.setAlignment(Qt.AlignCenter)
-        mainMenuTitle.setStyleSheet("font: 14pt Century Gothic")
-        mainMenuTitle.setText("Start Menu")
+        mainMenuTitle.setFont(QFont("Century Gothic", 14))
+        mainMenuTitle.move(50, 50)
+        mainMenuTitle.setText("Identifying Distinctive Features for Explainable Face Verification")
+        mainMenuTitle.adjustSize()
         
 
         self.menuSelection.setWindowTitle("Unique Facial Feature Detection")
-        CameraSettings = QPushButton('Camera Settings', self)
-        CameraSettings.setToolTip('Change camera settings')
+        CameraSettings = QPushButton('Use a camera', self)
+        CameraSettings.setToolTip('Choose a webcam')
 
         ChoosePicture = QPushButton("Choose from files", self)
         ChoosePicture.setToolTip('Choose picture')
