@@ -150,7 +150,7 @@ class UI(QWidget):
             pass
   
         # path to save 
-        self.save_path = "backend/webcam_photos/" 
+        self.save_path = "/backend/webcam_photos/" 
   
         # creating a QCameraViewfinder object 
         self.viewfinder = QCameraViewfinder() 
@@ -268,19 +268,20 @@ class UI(QWidget):
         self.camera.error.connect(lambda: self.alert(self.camera.errorString())) 
   
         # start the camera 
-        #self.camera.start() 
+        # self.camera.start() 
   
         # creating a QCameraImageCapture object 
         self.capture = QCameraImageCapture(self.camera) 
+
   
         # showing alert if error occur 
         self.capture.error.connect(lambda error_msg, error, 
                                    msg: self.alert(msg)) 
   
         # when image captured showing message 
-        self.capture.imageCaptured.connect(lambda d, 
-                                           i: self.status.showMessage("Image captured : " 
-                                                                      + str(self.save_seq))) 
+        # self.capture.imageCaptured.connect(lambda d, 
+         #                                  i: self.status.showMessage("Image captured : " 
+                                                                     # + str(self.save_seq))) 
   
         # getting current camera name 
         self.current_camera_name = self.available_cameras[i].description() 
@@ -293,23 +294,29 @@ class UI(QWidget):
   
         # time stamp 
         timestamp = time.strftime("%d-%b-%Y-%H_%M_%S") 
-  
-        # capture the image and save it on the save path 
-        self.capture.capture(os.path.join(self.save_path,  
-                                          "%s-%04d-%s.jpg" % ( 
-            self.current_camera_name, 
-            self.save_seq, 
-            timestamp 
-        ))) 
 
-        self.selectedPictureLocation = os.path.join(self.save_path, 
+       
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        dir_path += self.save_path
+
+        self.capture.capture(os.path.join(dir_path, "%s-%04d-%s.jpg" % (
+            self.current_camera_name,
+            self.save_seq,
+            timestamp)))
+        # increment the sequence 
+
+
+        self.selectedPictureLocation = os.path.join(dir_path,
                                                     "%s-%04d-%s.jpg" % (
             self.current_camera_name,
             self.save_seq,
             timestamp
                                                     ))
-  
-        # increment the sequence 
+     
+
+
+
+
         self.save_seq += 1
 
         self.stackedLayout.setCurrentIndex(2)
