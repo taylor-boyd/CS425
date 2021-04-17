@@ -10,7 +10,7 @@ def FaceAlignmentManual(path):
     # TODO:
     # PUT THIS "ROI" IN FRONT END
     # PUT ROI SCREEN ON PYQT SCREEN!
-    print (roi)
+    # print (roi)
     
     # This line from tutorial here -> 
     # https://blog.electroica.com/select-roi-or-multiple-rois-bounding-box-in-opencv-python/ 
