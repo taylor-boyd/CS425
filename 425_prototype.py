@@ -9,6 +9,7 @@ import os
 import sys
 import time
 import cv2
+import subprocess
 
 sys.path.append('./backend/')
 # Optimally but both functions into one file
@@ -79,7 +80,7 @@ class UI(QWidget):
         self.resizingPicture()
         self.faceAlignmentPick()
         self.faceAlignmentManualHelper()
-        self.photoProcessing()
+        # self.photoProcessing()
         self.photoProcessed()
         self.featuresList()
         self.caricatureCreation()
@@ -93,7 +94,7 @@ class UI(QWidget):
         self.menu.addWidget(self.resizeSelectedPicture)
         self.menu.addWidget(self.faceAlignmentPickScreen)
         self.menu.addWidget(self.faceAlignmentManualHelpScreen)
-        self.menu.addWidget(self.photoProcessingScreen)
+        # self.menu.addWidget(self.photoProcessingScreen)
         self.menu.addWidget(self.photoProcessedScreen)
         self.menu.addWidget(self.featuresListScreen)
         self.menu.addWidget(self.caricatureCreationScreen)
@@ -108,7 +109,7 @@ class UI(QWidget):
 
         mainMenuTitle = QLabel(self.menuSelection)
         mainMenuTitle.setAlignment(Qt.AlignCenter)
-        mainMenuTitle.setFont(QFont("Century Gothic", 14))
+        mainMenuTitle.setFont(QFont("Century Gothic", 14, weight=QFont.Bold))
         mainMenuTitle.move(50, 50)
         mainMenuTitle.setText("Identifying Distinctive Features for Explainable Face Verification")
         mainMenuTitle.adjustSize()
@@ -350,24 +351,25 @@ class UI(QWidget):
         pictureSelectionMainMenu.addWidget(self.menuButton2)
 
         selectPhotoButton = QPushButton("Select a picture", self)
-        selectedPhotoContinue = QPushButton("Continue: ", self)
+        self.selectedPhotoContinue = QPushButton("Continue: ", self)
+
+        # Disable continue button until photo is chosen
+        self.selectedPhotoContinue.setEnabled(False)
         pictureSelectionMainMenu.addWidget(selectPhotoButton)
-        pictureSelectionMainMenu.addWidget(selectedPhotoContinue)
+        pictureSelectionMainMenu.addWidget(self.selectedPhotoContinue)
 
         # Select photo button
         selectPhotoButton.clicked.connect(self.openPhoto)
 
         # Go to resizing window
         # TODO: 
-        # Add screen to use either auto face alignment or manual
-        # selectedPhotoContinue.clicked.connect(self.startFaceAlignmentAuto)
-        selectedPhotoContinue.clicked.connect(self.faceAlignmentPickWindow)
+        self.selectedPhotoContinue.clicked.connect(self.faceAlignmentPickWindow)
 
         selectedPhotoHelper = QLabel(self.pictureSelection)
         self.selectedPictureName = QLabel(self.pictureSelection)
 
         selectedPhotoHelper.setGeometry(QRect(160, -60, 300, 200))
-        selectedPhotoHelper.setStyleSheet("font: 14pt Century Gothic")
+        selectedPhotoHelper.setStyleSheet("font: 14pt Century Gothic; font-weight: bold")
         selectedPhotoHelper.setText("Selected photo is: ")
 
         self.selectedPictureLocation = ""
@@ -382,13 +384,66 @@ class UI(QWidget):
 
         self.pictureSelection.setLayout(pictureSelectionLayout)
 
+
+
+    
+        
+
+ # Run photo through backend
+    def startPhotoProcessing(self):
+        self.photoProcessingWindow()
+        filename = QTextDocument(self.selectedPictureName.text())
+        textFileName = filename.toPlainText()
+
+        # get actual photo file name without end punctuation
+        afterFirstApost = textFileName.find('\'') + 1
+        lastApost = len(textFileName) - 2
+        actualFileName = textFileName[afterFirstApost:lastApost]
+
+        # old way of calling shape_predict.py, can probably delete; returns 0 on success
+        # self.uniqueFeatureList = os.system('python backend/shape_predict.py ' + actualFileName)
+
+        # run shape_predict.py with actualFileName
+        proc = subprocess.Popen(["python", "backend/shape_predict.py", self.selectedPictureLocation], stdout=subprocess.PIPE, shell=True)
+        (out, err) = proc.communicate()
+        self.uniqueFeatureList = out.decode("utf-8")
+        # print ("UNIQUE FEATURES:", self.uniqueFeatureList)
+        
+        # write feature list to a .txt file - currently creates and overwrites the same file
+        # TODO: consider how it'll work with different files
+        outputTextFileName = './static/features.txt'
+        outputTextFile = open(outputTextFileName, "w")
+        outputTextFile.write(self.uniqueFeatureList)
+        outputTextFile.close()
+
+
+
     def faceAlignmentPick(self):
         self.faceAlignmentPickScreen = QWidget()
         self.faceAlignmentPickScreen.setWindowTitle("Unique Facial Feature Detection")
         self.faceAlignmentPickScreen.resize(575, 400)
         
-        faceAlignmentLayout = QHBoxLayout()
+        faceAlignmentLayout = QVBoxLayout()
         faceAlignmentButtonLayout = QHBoxLayout()
+
+        faceAlignmentTitleLayout = QVBoxLayout()
+        
+        faceAlignmentTitleLayout.setContentsMargins(50,0,50,100)
+
+        facePickerTitle = QLabel(self.faceAlignmentPickScreen)
+        facePickerTitle.setAlignment(Qt.AlignCenter)
+        facePickerTitle.setStyleSheet("font: 14pt Century Gothic; font-weight: bold")
+        facePickerTitle.setText("Face Alignment")
+
+        facePickerInstructions = QLabel(self.faceAlignmentPickScreen)
+        facePickerInstructions.setAlignment(Qt.AlignCenter)
+        facePickerInstructions.setStyleSheet("font: 14pt Century Gothic")
+        facePickerInstructions.setText("If you do not have a NVIDIA CUDA enabled GPU, please pick 'Manual Face Alignment', if you do, please use 'Auto Face Alignment'")
+
+        faceAlignmentTitleLayout.addWidget(facePickerTitle)
+        faceAlignmentTitleLayout.addWidget(facePickerInstructions)
+
+
 
         faceAlignmentAutoButton = QPushButton("Auto alignment", self)
         faceAlignmentManualButton = QPushButton("Manual alignment", self)
@@ -398,7 +453,8 @@ class UI(QWidget):
 
         faceAlignmentAutoButton.clicked.connect(self.startFaceAlignmentAuto)
         faceAlignmentManualButton.clicked.connect(self.faceAlignmentManualHelpWindow)
-
+        
+        faceAlignmentLayout.addLayout(faceAlignmentTitleLayout)
         faceAlignmentLayout.addLayout(faceAlignmentButtonLayout)
         self.faceAlignmentPickScreen.setLayout(faceAlignmentLayout)
 
@@ -442,8 +498,8 @@ class UI(QWidget):
         
         # TODO:
         # Send this to bryson's algorithm or where Jazel has her part
-        faceAlignmentManualContinue.clicked.connect(self.photoProcessingWindow)
-
+        # faceAlignmentManualContinue.clicked.connect(self.photoProcessingWindow)
+        faceAlignmentManualContinue.clicked.connect(self.startPhotoProcessing)
 
         faceAlignmentManualHelpLayout.addLayout(faceAlignmentManualButtonLayout)
         self.faceAlignmentManualHelpScreen.setLayout(faceAlignmentManualHelpLayout)
@@ -482,6 +538,9 @@ class UI(QWidget):
             self.selectedPictureName.setPixmap(picturePreview.scaled(self.selectedPictureName.width() * 2, self.selectedPictureName.height() * 2, Qt.KeepAspectRatio))
 
             self.selectedPictureLocation = files[0]
+            
+            # Enable continue button
+            self.selectedPhotoContinue.setEnabled(True)
 
 
             
@@ -654,7 +713,7 @@ class UI(QWidget):
         inputTextFileName = './static/features.txt'
 
         # was originally "r", might change back (change by Josh)
-        inputTextFile = open(inputTextFileName, "w+")
+        inputTextFile = open(inputTextFileName, "r")
 
         # read features from .txt file
         listOfFeatures = inputTextFile.read()
@@ -788,6 +847,17 @@ class Controller(QMainWindow, UI):
     def menuWindow(self):
         self.menu.setCurrentIndex(0)
 
+        # Reset the QLabel for current picture
+        self.selectedPictureName.clear()
+
+        # Turn continue button off in photo selection
+        self.selectedPhotoContinue.setEnabled(False)
+
+        self.faceManualHelper.clear()
+        self.resizingPictureDisplayLabel.clear()
+
+        # Need to do same stuff for webcam stuff
+
     def configureWebcamWindow(self):
         self.menu.setCurrentIndex(1)
         #self.show()
@@ -813,16 +883,16 @@ class Controller(QMainWindow, UI):
         self.menu.setCurrentIndex(6)
 
     def photoProcessedWindow(self):
-        self.menu.setCurrentIndex(7)
+        self.menu.setCurrentIndex(6)
 
     def featuresListWindow(self):
-        self.menu.setCurrentIndex(8)
+        self.menu.setCurrentIndex(7)
 
     def caricatureCreationWindow(self):
-        self.menu.setCurrentIndex(9)
+        self.menu.setCurrentIndex(8)
 
     def goToEndWindow(self):
-        self.menu.setCurrentIndex(10)
+        self.menu.setCurrentIndex(9)
      
     def exitProgram(self):
         sys.exit()
