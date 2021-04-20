@@ -50,6 +50,9 @@ results = "None"
 saveImage = 0
 path = "None"
 
+# used to prevent multiple feature list display on restart
+outputListLayout = None
+
 class UI(QWidget):
     def setup(self, Controller):
         
@@ -724,7 +727,15 @@ class UI(QWidget):
     # outputs list of unique features
     def outputtingList(self):
         self.featuresListWindow()
-        outputListLayout = self.featuresListScreen.layout()
+        global outputListLayout
+        if outputListLayout is None:
+            outputListLayout = self.featuresListScreen.layout() # TODO: fix, this is probably where double print is coming from when restart
+            print("outputListLayout was None")
+
+        # clear previous featuresListScreen layout
+        # emptyLayout = QHBoxLayout()
+        # self.featuresListScreen.setLayout(emptyLayout)
+
         # Hold save and continue button
         featuresBtnLayout = QHBoxLayout()
         
@@ -864,15 +875,23 @@ class UI(QWidget):
         listFile = open("./static/features.txt", 'r')
         listFromListFile = listFile.read()
 
-        file = open(name, 'w')
-        # global results
+        # only write to file if save file name was created
+        if name:
+            file = open(name, 'w')
+            # global results
+            
+            # writing contents of static/features.txt into new file
+            # orig. write(str(results))
+            file.write(listFromListFile)
+
+            # close output file
+            file.close()
         
-        # orig. write(str(results))
-        file.write(listFromListFile)    # writing contents of static/features.txt into new file
-        file.close()
+        # close input file
         listFile.close()
 
         # delete features.txt on program end
+        file_path = os.path.dirname(os.path.realpath(__file__))
         os.remove(file_path + '\\static\\features.txt')
 
     def savePhoto(self, input):
