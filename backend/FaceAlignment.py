@@ -62,7 +62,7 @@ def FaceAlignmentAuto(currentImage):
     upperLeftMax = generateMaxCoords(upperLeft, midPointX, midPointY)
 
     # Adding extra space
-    # Good values for what I tested, can adjust to your liking 
+    # Good values for what I tested, can adjust to your liking
 
     # Moved image right (pos values)
     bottomRightMax[0] += 100
