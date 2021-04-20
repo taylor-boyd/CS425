@@ -48,6 +48,18 @@ from FaceAlignment import FaceAlignmentAuto
 
 class UI(QWidget):
     def setup(self, Controller):
+
+        # Creates webcam_photos if it doesn't exist
+        if not os.path.exists("backend/webcam_photos"):
+            os.makedirs("backend/webcam_photos")
+        else:
+            print("webcam_photos exists")
+        
+        # Create ResizedImages if it doesn't exist
+        if not os.path.exists("backend/ResizedImages"):
+            os.makedirs("backend/ResizedImages")
+        else:
+            print ("ResizedImages exists")
         
         # Need multiple menuButtons for each 
         self.menuButton = QPushButton("Back to main menu")
@@ -445,8 +457,8 @@ class UI(QWidget):
 
 
 
-        faceAlignmentAutoButton = QPushButton("Auto alignment", self)
-        faceAlignmentManualButton = QPushButton("Manual alignment", self)
+        faceAlignmentAutoButton = QPushButton("Auto Face Alignment", self)
+        faceAlignmentManualButton = QPushButton("Manual Face Alignment", self)
 
         faceAlignmentButtonLayout.addWidget(faceAlignmentAutoButton)
         faceAlignmentButtonLayout.addWidget(faceAlignmentManualButton)
