@@ -729,12 +729,23 @@ class UI(QWidget):
         self.featuresListWindow()
         global outputListLayout
         if outputListLayout is None:
-            outputListLayout = self.featuresListScreen.layout() # TODO: fix, this is probably where double print is coming from when restart
-            print("outputListLayout was None")
+            # set up initial layout
+            outputListLayout = self.featuresListScreen.layout()
+        else:
+            # reset layout (assumed restart)
 
-        # clear previous featuresListScreen layout
-        # emptyLayout = QHBoxLayout()
-        # self.featuresListScreen.setLayout(emptyLayout)
+            # delete widgets
+            while outputListLayout.count():
+                child = outputListLayout.takeAt(0)
+                if child.widget():
+                    child.widget().deleteLater()
+            
+            # re-add header layout - part of featuresList
+            obtainedFeaturesList = QLabel(self.photoProcessedScreen)
+            obtainedFeaturesList.setStyleSheet("font: 14pt Century Gothic")
+            obtainedFeaturesList.setText("Your unique features!")
+            obtainedFeaturesList.setAlignment(Qt.AlignCenter)
+            outputListLayout.addWidget(obtainedFeaturesList)
 
         # Hold save and continue button
         featuresBtnLayout = QHBoxLayout()
@@ -783,7 +794,7 @@ class UI(QWidget):
         continueBtn.clicked.connect(self.goToEndWindow)
 
         outputListLayout.addLayout(featuresBtnLayout)
-        self.featuresListScreen.setLayout(outputListLayout)
+        # self.featuresListScreen.setLayout(outputListLayout)   # necessary???
 
     # Display feature list
     def featuresList(self):
