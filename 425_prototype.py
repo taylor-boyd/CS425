@@ -46,6 +46,10 @@ from FaceAlignment import FaceAlignmentAuto
 #        time.sleep(5)
 #        print ("complete")
 
+results = "None"
+saveImage = 0
+path = "None"
+
 class UI(QWidget):
     def setup(self, Controller):
         
@@ -137,7 +141,9 @@ class UI(QWidget):
         self.menuSelection.setLayout(mainLayout)
 
     def webcamConfiguration(self):
-
+        global saveImage
+        saveImage = 0
+        
         self.webcamSelection.setWindowTitle("Unique Facial Feature Detection")
         self.webcamSelection.resize(575, 400)
 
@@ -330,6 +336,8 @@ class UI(QWidget):
         self.save_seq += 1
 
         self.stackedLayout.setCurrentIndex(2)
+
+    # Taylor webcam stuff ?
   
     # method for alerts 
     def alert(self, msg): 
@@ -341,6 +349,8 @@ class UI(QWidget):
         error.showMessage(msg)
 
     def photoSelection(self):
+        global saveImage
+        saveImage = 1
 
         self.pictureSelection.setWindowTitle("Unique Facial Feature Detection")
 
@@ -660,6 +670,13 @@ class UI(QWidget):
         obtainingFeaturesText = QLabel(self.photoProcessingScreen)
         obtainingFeaturesText.setStyleSheet("font: 14pt Century Gothic")
         obtainingFeaturesText.setText("Obtaining unique features...")
+        # predictor ?
+        global results
+        if saveImage == 1:
+            images = Image.open("./backend/ResizedImages/newCropped.jpeg")
+        else:
+            images = Image.open(path)
+        results = predictor.process_image(images)
         obtainingFeaturesText.setGeometry(QRect(30, -10, 500, 200))
         obtainingFeaturesText.setAlignment(Qt.AlignCenter)
 
@@ -719,6 +736,7 @@ class UI(QWidget):
 
         # read features from .txt file
         listOfFeatures = inputTextFile.read()
+        results = str(listOfFeatures)    # save list into results for Jeron's saveList
         
         # display list of unique features
         actualFeaturesList = QLabel(self.photoProcessedScreen)
@@ -735,10 +753,20 @@ class UI(QWidget):
         # Save in .txt format is probably preferable
         # saveListBtn does nothing for now, will implement when we tie in unique algorithm
         saveListBtn = QPushButton("Save unique features list")
+        # if from Jeron
+        if saveImage == 0:
+            savePhotoBtn = QPushButton("Save Photo")
+            savePhotoBtn.clicked.connect(self.savePhoto(images))
         continueBtn = QPushButton("Continue")
 
         featuresBtnLayout.addWidget(saveListBtn)
+        # if from Jeron
+        if saveImage == 0:
+            featuresBtnLayout.addWidget(savePhotoBtn())
         featuresBtnLayout.addWidget(continueBtn)
+
+        # Save Features List - from Jeron
+        saveListBtn.clicked.connect(self.saveList)
 
         # Go to end screen
         continueBtn.clicked.connect(self.goToEndWindow)
@@ -760,6 +788,8 @@ class UI(QWidget):
         obtainedFeaturesList.setText("Your unique features!")
         # obtainedFeaturesList.setGeometry(QRect(30, -10, 500, 200))
         obtainedFeaturesList.setAlignment(Qt.AlignCenter)
+
+        # obtainedFeaturesList.setText(str(results))    # from Jeron?
 
         featuresLayout.addWidget(obtainedFeaturesList)
 
@@ -828,6 +858,28 @@ class UI(QWidget):
         continueBtn.clicked.connect(self.goToEndWindow)
         caricatureCreationLayout.addLayout(caricatureCreationBtnLayout)
         self.caricatureCreationScreen.setLayout(caricatureCreationLayout)
+    
+    def saveList(self):
+        name, _ = QFileDialog.getSaveFileName(self, 'Save File', "features.txt")
+        listFile = open("./static/features.txt", 'r')
+        listFromListFile = listFile.read()
+
+        file = open(name, 'w')
+        # global results
+        
+        # orig. write(str(results))
+        file.write(listFromListFile)    # writing contents of static/features.txt into new file
+        file.close()
+        listFile.close()
+
+        # delete features.txt on program end
+        os.remove(file_path + '\\static\\features.txt')
+
+    def savePhoto(self, input):
+        name, _ = QFileDialog.getSaveFileName(self, 'Save File', "Image Files (*jpg *png)")
+        file = Image.open(name, 'w')
+        file = Image.save(images)
+        file.close()
 
 class Controller(QMainWindow, UI):
     def __init__(self):
