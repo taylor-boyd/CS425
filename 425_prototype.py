@@ -859,7 +859,7 @@ class UI(QWidget):
     def deleteFeaturesTxt(self):
         file_path = os.path.dirname(os.path.realpath(__file__))
         if os.path.exists(file_path + '\\static\\features.txt'):
-            os.remove(file_path + '\\static\\features.txt'))
+            os.remove(file_path + '\\static\\features.txt')
         self.goToEndWindow()
 
     # Display feature list
