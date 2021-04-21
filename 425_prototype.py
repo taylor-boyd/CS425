@@ -838,11 +838,19 @@ class UI(QWidget):
         # Save Photo
         savePhotoBtn.clicked.connect(self.savePhoto)
 
-        # Go to end screen
-        continueBtn.clicked.connect(self.goToEndWindow)
+        # Delete features.txt then go to end screen
+        continueBtn.clicked.connect(self.deleteFeaturesTxt) # orig. goToEndWindow
 
         outputListLayout.addLayout(featuresBtnLayout)
         # self.featuresListScreen.setLayout(outputListLayout)   # necessary???
+    
+    # delete features.txt if it exists
+    def deleteFeaturesTxt(self):
+        file_path = os.path.dirname(os.path.realpath(__file__))
+        if os.path.exists(file_path + '\\static\\features.txt'):
+            os.remove(file_path + '\\static\\features.txt')
+        self.goToEndWindow()
+
 
     # Display feature list
     def featuresList(self):
