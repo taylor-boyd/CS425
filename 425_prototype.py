@@ -4,12 +4,14 @@ from PyQt5.QtCore import *
 from PyQt5.QtPrintSupport import *
 from PyQt5.QtMultimedia import *
 from PyQt5.QtMultimediaWidgets import *
+from PIL import Image
 
 import os
 import sys
 import time
 import cv2
 import subprocess
+import json
 
 sys.path.append('./backend/')
 # Optimally but both functions into one file
@@ -49,9 +51,12 @@ from FaceAlignment import FaceAlignmentAuto
 results = "None"
 saveImage = 0
 path = "None"
+images = 0
 
 # used to prevent multiple feature list display on restart
 outputListLayout = None
+# used to prevent multiple button display on restart
+featuresBtnLayout = None
 
 class UI(QWidget):
     def setup(self, Controller):
@@ -192,9 +197,16 @@ class UI(QWidget):
 
         # creating a tool bar
         toolbar = QToolBar("Camera Tool Bar")
+        toolbar2 = QToolBar("Camera Tool Bar")
 
         # adding tool bar to main window
         self.p1Layout.addWidget(toolbar)
+
+        self.p2Layout.addWidget(toolbar2)
+
+        show_photo = QAction("Show photo taken", self)
+        show_photo.triggered.connect(self.showWebcamPic)
+        toolbar2.addAction(show_photo)
 
         # creating a show viewfinder action
         show_viewfinder = QAction("Show", self)
@@ -217,6 +229,7 @@ class UI(QWidget):
         # adding action to it
         # calling take_photo method
         click_action.triggered.connect(self.click_photo)
+        #click_action.triggered.connect(self.showWebcamPic)
 
         # adding this to the tool bar
         toolbar.addAction(click_action)
@@ -245,25 +258,28 @@ class UI(QWidget):
         # adding this to layout
         toolbar.addWidget(camera_selector)
 
-        #self.p1Layout.addWidget(self.viewfinder)
-
         self.p1Layout.addWidget(self.viewfinder)
 
-        self.webcampic = QLabel(self.p1)
+        self.webcampic = QLabel(self.p2)
         self.p2Layout.addWidget(self.webcampic)
 
-        webcampicPreview = QPixmap(self.save_path)
-        self.webcampic.setPixmap(webcampicPreview.scaled(self.webcampic.width() * 2, self.webcampic.height() * 2, Qt.KeepAspectRatio))
-
-        self.menuButton.clicked.connect(self.stopCam)
-        self.p2Layout.addWidget(self.menuButton) # back to main menu button
-        continueSelectedWebcam = QPushButton("Continue", self)
+        #webcamPreview = QPushButton("Show photo taken", self)
+        #webcamPreview.clicked.connect(self.showWebcamPic)
+        #self.p2Layout.addWidget(webcamPreview)
+        retakePhoto = QPushButton("Retake Photo", self)
+        retakePhoto.clicked.connect(self.changeIndex)
+        retakePhoto.clicked.connect(self.clearLabel)
+        self.p2Layout.addWidget(retakePhoto)
+        continueSelectedWebcam = QPushButton("Use this photo", self)
         continueSelectedWebcam.clicked.connect(self.faceAlignmentPickWindow)
         continueSelectedWebcam.clicked.connect(self.stopCam)
         self.p2Layout.addWidget(continueSelectedWebcam)
+        self.menuButton.clicked.connect(self.stopCam)
+        self.p2Layout.addWidget(self.menuButton) # back to main menu button
 
         self.p1.setLayout(self.p1Layout)
         self.p2.setLayout(self.p2Layout)
+
 
         self.stackedLayout.addWidget(self.p1)
         self.stackedLayout.addWidget(self.p2)
@@ -272,6 +288,12 @@ class UI(QWidget):
         self.webcamSelection.setLayout(self.stackedLayout)
 
         self.stackedLayout.setCurrentIndex(0)
+
+    def changeIndex(self):
+        self.stackedLayout.setCurrentIndex(0)
+
+    def clearLabel(self):
+        self.webcampic.clear()
 
     # method to show viewfinder
     def show_cam(self):
@@ -330,11 +352,6 @@ class UI(QWidget):
             timestamp)))
         # increment the sequence
 
-        self.save_path = os.path.join(dir_path, "%s-%04d-%s.jpg" % (
-            self.current_camera_name,
-            self.save_seq,
-            timestamp))
-
         self.selectedPictureLocation = os.path.join(dir_path,
                                                     "%s-%04d-%s.jpg" % (
             self.current_camera_name,
@@ -345,6 +362,10 @@ class UI(QWidget):
         self.save_seq += 1
 
         self.stackedLayout.setCurrentIndex(1)
+
+    def showWebcamPic(self):
+        webcampicPreview = QPixmap(self.selectedPictureLocation)
+        self.webcampic.setPixmap(webcampicPreview.scaled(self.webcampic.width(), self.webcampic.height(), Qt.KeepAspectRatio))
 
     def stopCam(self):
         self.camera.stop()
@@ -499,7 +520,7 @@ class UI(QWidget):
         manualInstructions = QLabel(self.faceAlignmentManualHelpScreen)
         manualInstructions.setAlignment(Qt.AlignCenter)
         manualInstructions.setStyleSheet("font: 14pt Century Gothic")
-        manualInstructions.setText("A screen will appear showing the image. With the selector tool, draw a box around the face in the image.\n When satisfied, press ENTER. Once completed exit the newly opened ROI window and the ROI selector window")
+        manualInstructions.setText("A screen will appear showing the image. With the selector tool, draw a box around the face in the image.\n When satisfied, press ENTER. Once completed, exit the newly opened ROI window and the ROI selector window.")
         manualInstructions.setWordWrap(True)
 
 
@@ -515,8 +536,6 @@ class UI(QWidget):
         faceAlignmentManualContinue = QPushButton("Continue", self)
         faceAlignmentManualButtonLayout.addWidget(faceAlignmentManualContinue)
 
-        # TODO:
-        # Send this to bryson's algorithm or where Jazel has her part
         # faceAlignmentManualContinue.clicked.connect(self.photoProcessingWindow)
         faceAlignmentManualContinue.clicked.connect(self.startPhotoProcessing)
 
@@ -676,13 +695,6 @@ class UI(QWidget):
         obtainingFeaturesText = QLabel(self.photoProcessingScreen)
         obtainingFeaturesText.setStyleSheet("font: 14pt Century Gothic")
         obtainingFeaturesText.setText("Obtaining unique features...")
-        # predictor ?
-        global results
-        if saveImage == 1:
-            images = Image.open("./backend/ResizedImages/newCropped.jpeg")
-        else:
-            images = Image.open(path)
-        results = predictor.process_image(images)
         obtainingFeaturesText.setGeometry(QRect(30, -10, 500, 200))
         obtainingFeaturesText.setAlignment(Qt.AlignCenter)
 
@@ -713,6 +725,17 @@ class UI(QWidget):
         obtainedFeaturesText.setGeometry(QRect(30, -10, 500, 200))
         obtainedFeaturesText.setAlignment(Qt.AlignCenter)
 
+        # from Jeron
+        # predictor = ShapePredictor("model/shape_model", "shape-labels.txt")
+        global results
+        global images
+        if saveImage == 1:
+            # if file exists
+            if (str(os.path.isfile("./backend/ResizedImages/newCropped.jpeg")) == True):
+                images = Image.open("./backend/ResizedImages/newCropped.jpeg")
+        else:
+            images = Image.open(path)
+        # results = predictor.process_image(images)
 
         # Two buttons here for Feature List or Caricature
         photoProcessedBtnLayout = QHBoxLayout()
@@ -750,23 +773,42 @@ class UI(QWidget):
             obtainedFeaturesList.setAlignment(Qt.AlignCenter)
             outputListLayout.addWidget(obtainedFeaturesList)
 
-        # Hold save and continue button
-        featuresBtnLayout = QHBoxLayout()
+        global featuresBtnLayout
+        if featuresBtnLayout is None:
+            # set up initial layout
+            featuresBtnLayout = QHBoxLayout()
+        else:
+            # reset layout (assumed restart)
+
+            # delete widgets
+            while featuresBtnLayout.count():
+                child = featuresBtnLayout.takeAt(0)
+                if child.widget():
+                    child.widget().deleteLater()
 
         # open .txt file with features
         inputTextFileName = './static/features.txt'
 
         # was originally "r", might change back (change by Josh)
         inputTextFile = open(inputTextFileName, "r")
-
+        '''
         # read features from .txt file
         listOfFeatures = inputTextFile.read()
         results = str(listOfFeatures)    # save list into results for Jeron's saveList
-
+        '''
         # display list of unique features
         actualFeaturesList = QLabel(self.photoProcessedScreen)
         actualFeaturesList.setStyleSheet("font: 10pt Century Gothic")
-        actualFeaturesList.setText(listOfFeatures)  # change parameter to be self.uniqueFeatureList ?
+
+        # convert features.txt contents into dictionary <string, float>
+        uniqueFeatureDict = eval(inputTextFile.read())
+        # sort dictionary in descending order
+        uniqueFeatureDict = dict(sorted(uniqueFeatureDict.items(), key=lambda item: item[1], reverse=True))
+        # add dictionary items to QLabel text
+        for x, y in uniqueFeatureDict.items():
+            actualFeaturesList.setText(actualFeaturesList.text() + "\n" + x + ": " + str(y))
+
+        # actualFeaturesList.setText(listOfFeatures)
         actualFeaturesList.setWordWrap(True)
         actualFeaturesList.setAlignment(Qt.AlignCenter)
         outputListLayout.addWidget(actualFeaturesList)
@@ -778,20 +820,32 @@ class UI(QWidget):
         # Save in .txt format is probably preferable
         # saveListBtn does nothing for now, will implement when we tie in unique algorithm
         saveListBtn = QPushButton("Save unique features list")
+
         # if from Jeron
-        if saveImage == 0:
-            savePhotoBtn = QPushButton("Save Photo")
-            savePhotoBtn.clicked.connect(self.savePhoto(images))
+        global images
+
+        savePhotoBtn = QPushButton("Save Photo")
+
+        if saveImage == 0 or self.selectedPictureLocation.find('webcam_photos') != -1:
+            # savePhotoBtn = QPushButton("Save Photo")
+            featuresBtnLayout.addWidget(savePhotoBtn)
+            # savePhotoBtn.clicked.connect(self.savePhoto(images))
+
         continueBtn = QPushButton("Continue")
 
         featuresBtnLayout.addWidget(saveListBtn)
+        '''
         # if from Jeron
         if saveImage == 0:
-            featuresBtnLayout.addWidget(savePhotoBtn())
+            featuresBtnLayout.addWidget(savePhotoBtn)
+        '''
         featuresBtnLayout.addWidget(continueBtn)
 
         # Save Features List - from Jeron
         saveListBtn.clicked.connect(self.saveList)
+
+        # Save Photo
+        savePhotoBtn.clicked.connect(self.savePhoto)
 
         # Go to end screen
         continueBtn.clicked.connect(self.goToEndWindow)
@@ -818,33 +872,8 @@ class UI(QWidget):
 
         featuresLayout.addWidget(obtainedFeaturesList)
 
-
         # Features are displayed in outputtingList
         # Buttons are added in outputtingList to maintain order of widgets
-
-        '''
-        featuresList = QPixmap("static/SampleFeatures")
-
-        featuresListLabel = QLabel(self.photoProcessedScreen)
-        featuresListLabel.setPixmap(featuresList)
-
-        featuresLayout.addWidget(featuresListLabel)
-
-
-        # Allow save option
-        # Save in .txt format is probably preferable
-        # saveListBtn does nothing for now, will implement when we tie in unique algorithm
-        saveListBtn = QPushButton("Save unique features list")
-        continueBtn = QPushButton("Continue")
-
-        featuresBtnLayout.addWidget(saveListBtn)
-        featuresBtnLayout.addWidget(continueBtn)
-
-        # Go to end screen
-        continueBtn.clicked.connect(self.goToEndWindow)
-
-        featuresLayout.addLayout(featuresBtnLayout)
-        '''
 
         self.featuresListScreen.setLayout(featuresLayout)
 
@@ -908,11 +937,18 @@ class UI(QWidget):
         file_path = os.path.dirname(os.path.realpath(__file__))
         os.remove(file_path + '\\static\\features.txt')
 
-    def savePhoto(self, input):
+    # orig. parameters: self, input
+    def savePhoto(self):
         name, _ = QFileDialog.getSaveFileName(self, 'Save File', "Image Files (*jpg *png)")
-        file = Image.open(name, 'w')
-        file = Image.save(images)
-        file.close()
+        # only save photo file if file name was decided
+        if name:
+            # TODO: fix "No such file or directory" when Image.open
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            file = Image.open(os.path.join(script_dir, name))
+            # Image.open(name)
+            global images
+            file = Image.save(images)
+            file.close()
 
 class Controller(QMainWindow, UI):
     def __init__(self):
@@ -942,6 +978,7 @@ class Controller(QMainWindow, UI):
 
         self.faceManualHelper.clear()
         self.resizingPictureDisplayLabel.clear()
+        self.webcampic.clear()
 
         # Need to do same stuff for webcam stuff
 
