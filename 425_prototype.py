@@ -321,22 +321,21 @@ class UI(QWidget):
 
     # method to take photo
     def click_photo(self):
-
         # time stamp
         timestamp = time.strftime("%d-%b-%Y-%H_%M_%S")
-
-
         dir_path = os.path.dirname(os.path.realpath(__file__))
         dir_path += self.save_path
-
-        self.capture.capture(os.path.join(dir_path, "%s-%04d-%s.jpg" % (self.current_camera_name, self.save_seq, timestamp)))
+        self.capture.capture(os.path.join(dir_path, "%s-%04d-%s.jpg" % (
+            self.current_camera_name,
+            self.save_seq,
+            timestamp)))
         # increment the sequence
 
-
-        self.selectedPictureLocation = os.path.join(dir_path, self.current_camera_name, self.save_seq, timestamp)
-
+        self.selectedPictureLocation = os.path.join(dir_path, "%s-%04d-%s.jpg" % (
+            self.current_camera_name,
+            self.save_seq,
+            timestamp))
         self.save_seq += 1
-
         self.stackedLayout.setCurrentIndex(2)
 
     # Taylor webcam stuff ?
@@ -644,9 +643,10 @@ class UI(QWidget):
         finalScreenText.setGeometry(QRect(30, -10, 500, 200))
         finalScreenText.setAlignment(Qt.AlignCenter)
 
+
         # Final screen buttons
         menuButtonFinal.clicked.connect(self.menuWindow)
-        exitBtn.clicked.connect(slef.fileDelete)
+        exitBtn.clicked.connect(self.fileDelete)
 
 
         self.finalScreen.setLayout(finalScreenBtnLayout)
@@ -883,7 +883,7 @@ class UI(QWidget):
 
     # orig. parameters: self, input
     def savePhoto(self):
-        name, _ = QFileDialog.getSaveFileName(self, 'Save File', "Image Files (*jpg *png)")
+        name, _ = QFileDialog.getSaveFileName(self, 'Save File', "image.png")
         # only save photo file if file name was decided
         if name:
             # TODO: fix "No such file or directory" when Image.open
@@ -895,12 +895,11 @@ class UI(QWidget):
             file.close()
 
     def fileDelete(self):
-        if os.path.exists("./backend/ResizedImages/newCropped.jpeg"):
-            os.delete("./backend/ResizedImages/newCropped.jpeg")
-        if os.path.exists("./static/temp.txt"):
-            os.delete("./static/temp.txt")
+        os.remove("static/temp.txt")
+        if os.path.exists("backend/ResizedImages/newCropped.jpeg"):
+            os.remove("backend/ResizedImages/newCropped.jpeg")
         if os.path.exists(self.selectedPictureLocation):
-            os.delete(self.selectedPictureLocation)
+            os.remove(self.selectedPictureLocation)
         self.exitProgram()
 
 class Controller(QMainWindow, UI):
