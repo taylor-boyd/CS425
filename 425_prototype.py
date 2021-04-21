@@ -4,12 +4,14 @@ from PyQt5.QtCore import *
 from PyQt5.QtPrintSupport import *
 from PyQt5.QtMultimedia import *
 from PyQt5.QtMultimediaWidgets import *
+from PIL import Image
 
 import os
 import sys
 import time
 import cv2
 import subprocess
+import json
 
 sys.path.append('./backend/')
 # Optimally but both functions into one file
@@ -49,9 +51,12 @@ from FaceAlignment import FaceAlignmentAuto
 results = "None"
 saveImage = 0
 path = "None"
+images = 0
 
 # used to prevent multiple feature list display on restart
 outputListLayout = None
+# used to prevent multiple button display on restart
+featuresBtnLayout = None
 
 class UI(QWidget):
     def setup(self, Controller):
@@ -507,7 +512,7 @@ class UI(QWidget):
         manualInstructions = QLabel(self.faceAlignmentManualHelpScreen)
         manualInstructions.setAlignment(Qt.AlignCenter)
         manualInstructions.setStyleSheet("font: 14pt Century Gothic")
-        manualInstructions.setText("A screen will appear showing the image. With the selector tool, draw a box around the face in the image.\n When satisfied, press ENTER. Once completed exit the newly opened ROI window and the ROI selector window")
+        manualInstructions.setText("A screen will appear showing the image. With the selector tool, draw a box around the face in the image.\n When satisfied, press ENTER. Once completed, exit the newly opened ROI window and the ROI selector window.")
         manualInstructions.setWordWrap(True)
 
 
@@ -523,8 +528,6 @@ class UI(QWidget):
         faceAlignmentManualContinue = QPushButton("Continue", self)
         faceAlignmentManualButtonLayout.addWidget(faceAlignmentManualContinue)
 
-        # TODO:
-        # Send this to bryson's algorithm or where Jazel has her part
         # faceAlignmentManualContinue.clicked.connect(self.photoProcessingWindow)
         faceAlignmentManualContinue.clicked.connect(self.startPhotoProcessing)
 
@@ -685,13 +688,6 @@ class UI(QWidget):
         obtainingFeaturesText = QLabel(self.photoProcessingScreen)
         obtainingFeaturesText.setStyleSheet("font: 14pt Century Gothic")
         obtainingFeaturesText.setText("Obtaining unique features...")
-        # predictor ?
-        global results
-        if saveImage == 1:
-            images = Image.open("./backend/ResizedImages/newCropped.jpeg")
-        else:
-            images = Image.open(path)
-        results = predictor.process_image(images)
         obtainingFeaturesText.setGeometry(QRect(30, -10, 500, 200))
         obtainingFeaturesText.setAlignment(Qt.AlignCenter)
 
@@ -722,6 +718,15 @@ class UI(QWidget):
         obtainedFeaturesText.setGeometry(QRect(30, -10, 500, 200))
         obtainedFeaturesText.setAlignment(Qt.AlignCenter)
 
+        # from Jeron
+        # predictor = ShapePredictor("model/shape_model", "shape-labels.txt")
+        global results
+        global images
+        if saveImage == 1:
+            images = Image.open("./backend/ResizedImages/newCropped.jpeg")
+        else:
+            images = Image.open(path)
+        # results = predictor.process_image(images)
 
         # Two buttons here for Feature List or Caricature
         photoProcessedBtnLayout = QHBoxLayout()
@@ -759,23 +764,42 @@ class UI(QWidget):
             obtainedFeaturesList.setAlignment(Qt.AlignCenter)
             outputListLayout.addWidget(obtainedFeaturesList)
 
-        # Hold save and continue button
-        featuresBtnLayout = QHBoxLayout()
+        global featuresBtnLayout
+        if featuresBtnLayout is None:
+            # set up initial layout
+            featuresBtnLayout = QHBoxLayout()
+        else:
+            # reset layout (assumed restart)
+
+            # delete widgets
+            while featuresBtnLayout.count():
+                child = featuresBtnLayout.takeAt(0)
+                if child.widget():
+                    child.widget().deleteLater()
 
         # open .txt file with features
         inputTextFileName = './static/features.txt'
 
         # was originally "r", might change back (change by Josh)
         inputTextFile = open(inputTextFileName, "r")
-
+        '''
         # read features from .txt file
         listOfFeatures = inputTextFile.read()
         results = str(listOfFeatures)    # save list into results for Jeron's saveList
-
+        '''
         # display list of unique features
         actualFeaturesList = QLabel(self.photoProcessedScreen)
         actualFeaturesList.setStyleSheet("font: 10pt Century Gothic")
-        actualFeaturesList.setText(listOfFeatures)  # change parameter to be self.uniqueFeatureList ?
+
+        # convert features.txt contents into dictionary <string, float>
+        uniqueFeatureDict = eval(inputTextFile.read())
+        # sort dictionary in descending order
+        uniqueFeatureDict = dict(sorted(uniqueFeatureDict.items(), key=lambda item: item[1], reverse=True))
+        # add dictionary items to QLabel text
+        for x, y in uniqueFeatureDict.items():
+            actualFeaturesList.setText(actualFeaturesList.text() + "\n" + x + ": " + str(y))
+
+        # actualFeaturesList.setText(listOfFeatures)
         actualFeaturesList.setWordWrap(True)
         actualFeaturesList.setAlignment(Qt.AlignCenter)
         outputListLayout.addWidget(actualFeaturesList)
@@ -787,20 +811,32 @@ class UI(QWidget):
         # Save in .txt format is probably preferable
         # saveListBtn does nothing for now, will implement when we tie in unique algorithm
         saveListBtn = QPushButton("Save unique features list")
+
         # if from Jeron
-        if saveImage == 0:
-            savePhotoBtn = QPushButton("Save Photo")
-            savePhotoBtn.clicked.connect(self.savePhoto(images))
+        global images
+
+        savePhotoBtn = QPushButton("Save Photo")
+
+        if saveImage == 0 or self.selectedPictureLocation.find('webcam_photos') != -1:
+            # savePhotoBtn = QPushButton("Save Photo")
+            featuresBtnLayout.addWidget(savePhotoBtn)
+            # savePhotoBtn.clicked.connect(self.savePhoto(images))
+
         continueBtn = QPushButton("Continue")
 
         featuresBtnLayout.addWidget(saveListBtn)
+        '''
         # if from Jeron
         if saveImage == 0:
-            featuresBtnLayout.addWidget(savePhotoBtn())
+            featuresBtnLayout.addWidget(savePhotoBtn)
+        '''
         featuresBtnLayout.addWidget(continueBtn)
 
         # Save Features List - from Jeron
         saveListBtn.clicked.connect(self.saveList)
+
+        # Save Photo
+        savePhotoBtn.clicked.connect(self.savePhoto)
 
         # Go to end screen
         continueBtn.clicked.connect(self.goToEndWindow)
@@ -827,33 +863,8 @@ class UI(QWidget):
 
         featuresLayout.addWidget(obtainedFeaturesList)
 
-
         # Features are displayed in outputtingList
         # Buttons are added in outputtingList to maintain order of widgets
-
-        '''
-        featuresList = QPixmap("static/SampleFeatures")
-
-        featuresListLabel = QLabel(self.photoProcessedScreen)
-        featuresListLabel.setPixmap(featuresList)
-
-        featuresLayout.addWidget(featuresListLabel)
-
-
-        # Allow save option
-        # Save in .txt format is probably preferable
-        # saveListBtn does nothing for now, will implement when we tie in unique algorithm
-        saveListBtn = QPushButton("Save unique features list")
-        continueBtn = QPushButton("Continue")
-
-        featuresBtnLayout.addWidget(saveListBtn)
-        featuresBtnLayout.addWidget(continueBtn)
-
-        # Go to end screen
-        continueBtn.clicked.connect(self.goToEndWindow)
-
-        featuresLayout.addLayout(featuresBtnLayout)
-        '''
 
         self.featuresListScreen.setLayout(featuresLayout)
 
@@ -917,11 +928,18 @@ class UI(QWidget):
         file_path = os.path.dirname(os.path.realpath(__file__))
         os.remove(file_path + '\\static\\features.txt')
 
-    def savePhoto(self, input):
+    # orig. parameters: self, input
+    def savePhoto(self):
         name, _ = QFileDialog.getSaveFileName(self, 'Save File', "Image Files (*jpg *png)")
-        file = Image.open(name, 'w')
-        file = Image.save(images)
-        file.close()
+        # only save photo file if file name was decided
+        if name:
+            # TODO: fix "No such file or directory" when Image.open
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            file = Image.open(os.path.join(script_dir, name))
+            # Image.open(name)
+            global images
+            file = Image.save(images)
+            file.close()
 
 class Controller(QMainWindow, UI):
     def __init__(self):
