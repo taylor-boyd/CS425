@@ -11,6 +11,7 @@ import sys
 import time
 import cv2
 import subprocess
+import json
 
 sys.path.append('./backend/')
 # Optimally but both functions into one file
@@ -527,8 +528,6 @@ class UI(QWidget):
         faceAlignmentManualContinue = QPushButton("Continue", self)
         faceAlignmentManualButtonLayout.addWidget(faceAlignmentManualContinue)
 
-        # TODO:
-        # Send this to bryson's algorithm or where Jazel has her part
         # faceAlignmentManualContinue.clicked.connect(self.photoProcessingWindow)
         faceAlignmentManualContinue.clicked.connect(self.startPhotoProcessing)
 
@@ -783,15 +782,24 @@ class UI(QWidget):
 
         # was originally "r", might change back (change by Josh)
         inputTextFile = open(inputTextFileName, "r")
-
+        '''
         # read features from .txt file
         listOfFeatures = inputTextFile.read()
         results = str(listOfFeatures)    # save list into results for Jeron's saveList
-
+        '''
         # display list of unique features
         actualFeaturesList = QLabel(self.photoProcessedScreen)
         actualFeaturesList.setStyleSheet("font: 10pt Century Gothic")
-        actualFeaturesList.setText(listOfFeatures)  # change parameter to be self.uniqueFeatureList ?
+
+        # convert features.txt contents into dictionary <string, float>
+        uniqueFeatureDict = eval(inputTextFile.read())
+        # sort dictionary in descending order
+        uniqueFeatureDict = dict(sorted(uniqueFeatureDict.items(), key=lambda item: item[1], reverse=True))
+        # add dictionary items to QLabel text
+        for x, y in uniqueFeatureDict.items():
+            actualFeaturesList.setText(actualFeaturesList.text() + "\n" + x + ": " + str(y))
+
+        # actualFeaturesList.setText(listOfFeatures)
         actualFeaturesList.setWordWrap(True)
         actualFeaturesList.setAlignment(Qt.AlignCenter)
         outputListLayout.addWidget(actualFeaturesList)
@@ -806,8 +814,6 @@ class UI(QWidget):
         
         # if from Jeron
         global images
-        print("saveImage value:" + str(saveImage))
-        print("Selected pic location:" + self.selectedPictureLocation)
 
         savePhotoBtn = QPushButton("Save Photo")
         
