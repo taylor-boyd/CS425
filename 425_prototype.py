@@ -948,16 +948,24 @@ class UI(QWidget):
 
     # orig. parameters: self, input
     def savePhoto(self):
-        name, _ = QFileDialog.getSaveFileName(self, 'Save File', "Image Files (*jpg *png)")
+        name, _ = QFileDialog.getSaveFileName(self, 'Save File', "image.png")
         # only save photo file if file name was decided
         if name:
             # TODO: fix "No such file or directory" when Image.open
             script_dir = os.path.dirname(os.path.abspath(__file__))
             file = Image.open(os.path.join(script_dir, name))
             # Image.open(name)
-            global images
-            file = Image.save(images)
+            if os.path.exists("./backend/ResizedImages/newCropped.jpeg"):
+                file = Image.save("./backend/ResizedImages/newCropped.jpeg")
             file.close()
+
+    def fileDelete(self):
+        os.remove("static/temp.txt")
+        if os.path.exists("backend/ResizedImages/newCropped.jpeg"):
+            os.remove("backend/ResizedImages/newCropped.jpeg")
+        if os.path.exists(self.selectedPictureLocation):
+            os.remove(self.selectedPictureLocation)
+        self.exitProgram()
 
 class Controller(QMainWindow, UI):
     def __init__(self):
