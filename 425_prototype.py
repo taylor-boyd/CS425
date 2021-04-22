@@ -967,7 +967,6 @@ class UI(QWidget):
         global saveImage
         if os.path.exists(self.selectedPictureLocation) and self.selectedPictureLocation.find('webcam_photos') != -1:
             os.remove(self.selectedPictureLocation)
-        self.exitProgram()
 
 class Controller(QMainWindow, UI):
     def __init__(self):
