@@ -12,6 +12,7 @@ import time
 import cv2
 import subprocess
 import json
+import glob
 
 sys.path.append('./backend/')
 # Optimally but both functions into one file
@@ -269,6 +270,8 @@ class UI(QWidget):
         retakePhoto = QPushButton("Retake Photo", self)
         retakePhoto.clicked.connect(self.changeIndex)
         retakePhoto.clicked.connect(self.clearLabel)
+
+
         self.p2Layout.addWidget(retakePhoto)
         continueSelectedWebcam = QPushButton("Use this photo", self)
         continueSelectedWebcam.clicked.connect(self.faceAlignmentPickWindow)
@@ -294,6 +297,14 @@ class UI(QWidget):
 
     def clearLabel(self):
         self.webcampic.clear()
+
+        # Delete previous photo (deleting all photos function)
+        files = glob.glob("backend/webcam_photos/*.jpg")
+        for f in files:
+            os.remove(f)
+
+
+
 
     # method to show viewfinder
     def show_cam(self):
@@ -428,7 +439,7 @@ class UI(QWidget):
 
  # Run photo through backend
     def startPhotoProcessing(self):
-        print ("BACKEND NOW")
+        # print ("BACKEND NOW")
         self.photoProcessedWindow()
         filename = QTextDocument(self.selectedPictureName.text())
         textFileName = filename.toPlainText()
@@ -449,7 +460,7 @@ class UI(QWidget):
 
         # write feature list to a .txt file - currently creates and overwrites the same file
         # TODO: consider how it'll work with different files
-        print ("LIST:", self.uniqueFeatureList)
+        # print ("LIST:", self.uniqueFeatureList)
         outputTextFileName = './static/features.txt'
         outputTextFile = open(outputTextFileName, "w")
         outputTextFile.write(self.uniqueFeatureList)

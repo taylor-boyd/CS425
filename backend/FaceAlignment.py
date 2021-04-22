@@ -12,8 +12,8 @@ from skimage import io
 
 # Provide user path to photo here from front end
 def FaceAlignmentAuto(currentImage):
-    print ("IN ALIGNMENT")
-    print (currentImage)
+    # print ("IN ALIGNMENT")
+    # print (currentImage)
 
     currentImageFileSize = os.stat(currentImage).st_size
 
