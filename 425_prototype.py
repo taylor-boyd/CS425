@@ -964,8 +964,10 @@ class UI(QWidget):
         # os.remove("static/temp.txt")
         if os.path.exists("backend/ResizedImages/newCropped.jpeg"):
             os.remove("backend/ResizedImages/newCropped.jpeg")
-        # if os.path.exists(self.selectedPictureLocation):
-            # os.remove(self.selectedPictureLocation)
+        global saveImage
+        if os.path.exists(self.selectedPictureLocation) && self.selectedPictureLocation.find('webcam_photos') != -1:
+            os.remove(self.selectedPictureLocation)
+        self.exitProgram()
 
 class Controller(QMainWindow, UI):
     def __init__(self):
