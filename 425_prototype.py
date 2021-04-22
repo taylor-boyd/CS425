@@ -965,7 +965,7 @@ class UI(QWidget):
         if os.path.exists("backend/ResizedImages/newCropped.jpeg"):
             os.remove("backend/ResizedImages/newCropped.jpeg")
         global saveImage
-        if os.path.exists(self.selectedPictureLocation) && saveImage == 0:
+        if os.path.exists(self.selectedPictureLocation) && self.selectedPictureLocation.find('webcam_photos') != -1:
             os.remove(self.selectedPictureLocation)
         self.exitProgram()
 
