@@ -174,6 +174,10 @@ class UI(QWidget):
         self.p1 = QWidget()
         self.p1Layout = QVBoxLayout()
 
+        # create a second page
+        self.p2 = QWidget()
+        self.p2Layout = QVBoxLayout()
+
         # getting available cameras
         self.available_cameras = QCameraInfo.availableCameras()
 
@@ -193,9 +197,16 @@ class UI(QWidget):
 
         # creating a tool bar
         toolbar = QToolBar("Camera Tool Bar")
+        toolbar2 = QToolBar("Camera Tool Bar")
 
         # adding tool bar to main window
         self.p1Layout.addWidget(toolbar)
+
+        self.p2Layout.addWidget(toolbar2)
+
+        show_photo = QAction("Show photo taken", self)
+        show_photo.triggered.connect(self.showWebcamPic)
+        toolbar2.addAction(show_photo)
 
         # creating a show viewfinder action
         show_viewfinder = QAction("Show", self)
@@ -207,7 +218,7 @@ class UI(QWidget):
         toolbar.addAction(show_viewfinder)
 
         # creating a photo action to take photo
-        click_action = QAction("Click photo", self)
+        click_action = QAction("Take photo", self)
 
         # adding status tip to the photo action
         click_action.setStatusTip("This will capture picture")
@@ -218,6 +229,7 @@ class UI(QWidget):
         # adding action to it
         # calling take_photo method
         click_action.triggered.connect(self.click_photo)
+        #click_action.triggered.connect(self.showWebcamPic)
 
         # adding this to the tool bar
         toolbar.addAction(click_action)
@@ -246,46 +258,48 @@ class UI(QWidget):
         # adding this to layout
         toolbar.addWidget(camera_selector)
 
-        self.p1.setLayout(self.p1Layout)
-        self.stackedLayout.addWidget(self.p1)
+        self.p1Layout.addWidget(self.viewfinder)
 
-        # create second page
-        self.p2 = QWidget()
-        self.p2Layout = self.p1Layout
+        self.webcampic = QLabel(self.p2)
+        self.p2Layout.addWidget(self.webcampic)
 
-        self.p2Layout.addWidget(self.viewfinder)
-
-        self.p2.setLayout(self.p2Layout)
-        self.stackedLayout.addWidget(self.p2)
-
-        self.stackedLayout.setCurrentIndex(1)
-
-        # create third page
-        self.p3 = QWidget()
-        self.p3Layout = QVBoxLayout()
-
-        self.p3Layout.addWidget(self.menuButton) # back to main menu button
-
-        continueSelectedWebcam = QPushButton("Continue", self)
-
-        # Can add continue to new screen (think about taking p3 out)
-        # continueSelectedWebcam.clicked.connect(self.startFaceAlignmentAuto)
+        #webcamPreview = QPushButton("Show photo taken", self)
+        #webcamPreview.clicked.connect(self.showWebcamPic)
+        #self.p2Layout.addWidget(webcamPreview)
+        retakePhoto = QPushButton("Retake Photo", self)
+        retakePhoto.clicked.connect(self.changeIndex)
+        retakePhoto.clicked.connect(self.clearLabel)
+        self.p2Layout.addWidget(retakePhoto)
+        continueSelectedWebcam = QPushButton("Use this photo", self)
         continueSelectedWebcam.clicked.connect(self.faceAlignmentPickWindow)
-        self.p3Layout.addWidget(continueSelectedWebcam)
+        continueSelectedWebcam.clicked.connect(self.stopCam)
+        self.p2Layout.addWidget(continueSelectedWebcam)
+        self.menuButton.clicked.connect(self.stopCam)
+        self.p2Layout.addWidget(self.menuButton) # back to main menu button
 
-        self.p3.setLayout(self.p3Layout)
-        self.stackedLayout.addWidget(self.p3)
+        self.p1.setLayout(self.p1Layout)
+        self.p2.setLayout(self.p2Layout)
+
+
+        self.stackedLayout.addWidget(self.p1)
+        self.stackedLayout.addWidget(self.p2)
 
         # setting final layout
         self.webcamSelection.setLayout(self.stackedLayout)
+
+        self.stackedLayout.setCurrentIndex(0)
+
+    def changeIndex(self):
+        self.stackedLayout.setCurrentIndex(0)
+
+    def clearLabel(self):
+        self.webcampic.clear()
 
     # method to show viewfinder
     def show_cam(self):
 
         # start the camera
         self.camera.start()
-
-        self.stackedLayout.setCurrentIndex(1)
 
 
     # method to select camera
@@ -302,9 +316,6 @@ class UI(QWidget):
 
         # if any error occur show the alert
         self.camera.error.connect(lambda: self.alert(self.camera.errorString()))
-
-        # start the camera
-        # self.camera.start()
 
         # creating a QCameraImageCapture object
         self.capture = QCameraImageCapture(self.camera)
@@ -341,7 +352,6 @@ class UI(QWidget):
             timestamp)))
         # increment the sequence
 
-
         self.selectedPictureLocation = os.path.join(dir_path,
                                                     "%s-%04d-%s.jpg" % (
             self.current_camera_name,
@@ -349,15 +359,16 @@ class UI(QWidget):
             timestamp
                                                     ))
 
-
-
-
-
         self.save_seq += 1
 
-        self.stackedLayout.setCurrentIndex(2)
+        self.stackedLayout.setCurrentIndex(1)
 
-    # Taylor webcam stuff ?
+    def showWebcamPic(self):
+        webcampicPreview = QPixmap(self.selectedPictureLocation)
+        self.webcampic.setPixmap(webcampicPreview.scaled(self.webcampic.width(), self.webcampic.height(), Qt.KeepAspectRatio))
+
+    def stopCam(self):
+        self.camera.stop()
 
     # method for alerts
     def alert(self, msg):
@@ -413,10 +424,6 @@ class UI(QWidget):
         pictureSelectionLayout.addLayout(pictureSelectionMainMenu)
 
         self.pictureSelection.setLayout(pictureSelectionLayout)
-
-
-
-
 
 
  # Run photo through backend
@@ -492,6 +499,7 @@ class UI(QWidget):
         self.faceAlignmentPickScreen.setLayout(faceAlignmentLayout)
 
     def faceAlignmentManualHelper(self):
+        self.camera.stop()
         self.faceAlignmentManualHelpScreen = QWidget()
         self.faceAlignmentManualHelpScreen.setWindowTitle("Unique Facial Feature Detection")
         self.faceAlignmentManualHelpScreen.resize(575, 400)
@@ -542,7 +550,6 @@ class UI(QWidget):
         # goes to line 600, resizingPicture()
         self.resizingProcessedWindow()
         FaceAlignmentAuto(self.selectedPictureLocation)
-        self.camera.stop()
 
         # Setting the cropped img once FaceAlignment is done
         # Need to think of this when we use multiple photos
@@ -726,7 +733,7 @@ class UI(QWidget):
         global results
         global images
         if saveImage == 1:
-            # If file exists
+            # if file exists
             if (str(os.path.isfile("./backend/ResizedImages/newCropped.jpeg")) == True):
                 images = Image.open("./backend/ResizedImages/newCropped.jpeg")
         else:
@@ -843,11 +850,20 @@ class UI(QWidget):
         # Save Photo
         savePhotoBtn.clicked.connect(self.savePhoto)
 
+        # Delete features.txt then go to end screen
+        continueBtn.clicked.connect(self.deleteFeaturesTxt)
+
         # Go to end screen
-        continueBtn.clicked.connect(self.goToEndWindow)
+        #continueBtn.clicked.connect(self.goToEndWindow)
 
         outputListLayout.addLayout(featuresBtnLayout)
         # self.featuresListScreen.setLayout(outputListLayout)   # necessary???
+
+    def deleteFeaturesTxt(self):
+        file_path = os.path.dirname(os.path.realpath(__file__))
+        if os.path.exists(file_path + '\\static\\features.txt'):
+            os.remove(file_path + '\\static\\features.txt')
+        self.goToEndWindow()
 
     # Display feature list
     def featuresList(self):
@@ -935,7 +951,7 @@ class UI(QWidget):
 
     # orig. parameters: self, input
     def savePhoto(self):
-        name, _ = QFileDialog.getSaveFileName(self, 'Save File', "Image Files (*jpg *png)")
+        name, _ = QFileDialog.getSaveFileName(self, 'Save File', "image.png")
         # only save photo file if file name was decided
         if name:
             # this file should exist if it has been cropped
@@ -943,6 +959,14 @@ class UI(QWidget):
             global images
             img.save(name + '.jpeg', 'jpeg')
             # file.close()
+
+    def fileDelete(self):
+        os.remove("static/temp.txt")
+        if os.path.exists("backend/ResizedImages/newCropped.jpeg"):
+            os.remove("backend/ResizedImages/newCropped.jpeg")
+        if os.path.exists(self.selectedPictureLocation):
+            os.remove(self.selectedPictureLocation)
+        self.exitProgram()
 
 class Controller(QMainWindow, UI):
     def __init__(self):
@@ -972,12 +996,13 @@ class Controller(QMainWindow, UI):
 
         self.faceManualHelper.clear()
         self.resizingPictureDisplayLabel.clear()
+        self.webcampic.clear()
 
         # Need to do same stuff for webcam stuff
 
     def configureWebcamWindow(self):
         self.menu.setCurrentIndex(1)
-        #self.show()
+        self.stackedLayout.setCurrentIndex(0)
 
     def choosePictureWindow(self):
         self.menu.setCurrentIndex(2)
