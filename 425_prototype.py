@@ -964,7 +964,8 @@ class UI(QWidget):
         os.remove("static/temp.txt")
         if os.path.exists("backend/ResizedImages/newCropped.jpeg"):
             os.remove("backend/ResizedImages/newCropped.jpeg")
-        if os.path.exists(self.selectedPictureLocation):
+        global saveImage
+        if os.path.exists(self.selectedPictureLocation) && saveImage == 0:
             os.remove(self.selectedPictureLocation)
         self.exitProgram()
 
