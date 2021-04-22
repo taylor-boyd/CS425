@@ -677,7 +677,6 @@ class UI(QWidget):
         menuButtonFinal.clicked.connect(self.menuWindow)
         exitBtn.clicked.connect(self.exitProgram)
 
-
         self.finalScreen.setLayout(finalScreenBtnLayout)
 
     # MIGHT NOT EVEN NEED IF PROCESSING IS TOO FAST
@@ -852,6 +851,7 @@ class UI(QWidget):
 
         # Delete features.txt then go to end screen
         continueBtn.clicked.connect(self.deleteFeaturesTxt)
+        continueBtn.clicked.connect(self.fileDelete)
 
         # Go to end screen
         #continueBtn.clicked.connect(self.goToEndWindow)
@@ -961,12 +961,11 @@ class UI(QWidget):
             # file.close()
 
     def fileDelete(self):
-        os.remove("static/temp.txt")
+        # os.remove("static/temp.txt")
         if os.path.exists("backend/ResizedImages/newCropped.jpeg"):
             os.remove("backend/ResizedImages/newCropped.jpeg")
-        if os.path.exists(self.selectedPictureLocation):
-            os.remove(self.selectedPictureLocation)
-        self.exitProgram()
+        # if os.path.exists(self.selectedPictureLocation):
+            # os.remove(self.selectedPictureLocation)
 
 class Controller(QMainWindow, UI):
     def __init__(self):
