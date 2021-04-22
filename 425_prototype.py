@@ -421,7 +421,8 @@ class UI(QWidget):
 
  # Run photo through backend
     def startPhotoProcessing(self):
-        self.photoProcessingWindow()
+        print ("BACKEND NOW")
+        self.photoProcessedWindow()
         filename = QTextDocument(self.selectedPictureName.text())
         textFileName = filename.toPlainText()
 
@@ -441,6 +442,7 @@ class UI(QWidget):
 
         # write feature list to a .txt file - currently creates and overwrites the same file
         # TODO: consider how it'll work with different files
+        print ("LIST:", self.uniqueFeatureList)
         outputTextFileName = './static/features.txt'
         outputTextFile = open(outputTextFileName, "w")
         outputTextFile.write(self.uniqueFeatureList)
@@ -537,6 +539,7 @@ class UI(QWidget):
 
 
     def startFaceAlignmentAuto(self):
+        # goes to line 600, resizingPicture()
         self.resizingProcessedWindow()
         FaceAlignmentAuto(self.selectedPictureLocation)
         self.camera.stop()
@@ -641,7 +644,7 @@ class UI(QWidget):
         self.resizeSelectedPicture.setLayout(resizingPictureLayout)
 
         repeatResizingPicture.clicked.connect(self.faceAlignmentManualHelpWindow)
-        finishedResizingPhotoButton.clicked.connect(self.photoProcessingWindow)
+        finishedResizingPhotoButton.clicked.connect(self.startPhotoProcessing)
 
 
 
@@ -723,7 +726,9 @@ class UI(QWidget):
         global results
         global images
         if saveImage == 1:
-            images = Image.open("./backend/ResizedImages/newCropped.jpeg")
+            # If file exists
+            if (str(os.path.isfile("./backend/ResizedImages/newCropped.jpeg")) == True):
+                images = Image.open("./backend/ResizedImages/newCropped.jpeg")
         else:
             images = Image.open(path)
         # results = predictor.process_image(images)
@@ -933,13 +938,11 @@ class UI(QWidget):
         name, _ = QFileDialog.getSaveFileName(self, 'Save File', "Image Files (*jpg *png)")
         # only save photo file if file name was decided
         if name:
-            # TODO: fix "No such file or directory" when Image.open
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            file = Image.open(os.path.join(script_dir, name))
-            # Image.open(name)
+            # this file should exist if it has been cropped
+            img = Image.open("./backend/ResizedImages/newCropped.jpeg")
             global images
-            file = Image.save(images)
-            file.close()
+            img.save(name + '.jpeg', 'jpeg')
+            # file.close()
 
 class Controller(QMainWindow, UI):
     def __init__(self):
@@ -993,8 +996,8 @@ class Controller(QMainWindow, UI):
         self.menu.setCurrentIndex(5)
 
     # Choose for caricature or just a list
-    def photoProcessingWindow(self):
-        self.menu.setCurrentIndex(6)
+    # def photoProcessingWindow(self):
+        # self.menu.setCurrentIndex(6)
 
     def photoProcessedWindow(self):
         self.menu.setCurrentIndex(6)
