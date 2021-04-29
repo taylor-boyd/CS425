@@ -21,34 +21,6 @@ from FaceAlignmentv2 import FaceAlignmentManual
 # Allow algorithm to do it automatically
 from FaceAlignment import FaceAlignmentAuto
 
-
-# TODO:
-# Only continue if valid webcam or valid picture is selected
-# Fix screen name convention (menuSelection, webcamSelection)..
-
-# Notes:
-# Webcam photos save in default "photos" if folder isn't selected
-# Should save in folder where facial alignment algorithm would work
-# Don't show click button until camera is shown?
-# Flow -> Select a photo or webcam, send to facial alignment, finish in Bryson's Algorithm
-# Smaller image size than 500 kb? Currently have smaller than 1 MB
-# Throw error for the above ^
-# When selecting "Back to menu" reset current image to ""
-# Add detailed screens to illustrate the flow and what is happening to the photos
-# Add guide for how to manually crop
-
-# TODO:
-# IMPLEMENT MULTITHREADING SO PROGRAM WON'T FREEZE WHEN GETTING FACE ALIGNMENT
-# https://www.learnpyqt.com/tutorials/multithreading-pyqt-applications-qthreadpool/
-# class Worker(QRunnable):
-
-
-#    @pyqtSlot()
-#        def run(self):
-#        print ("hi")
-#        time.sleep(5)
-#        print ("complete")
-
 results = "None"
 saveImage = 0
 path = "None"
@@ -59,8 +31,33 @@ outputListLayout = None
 # used to prevent multiple button display on restart
 featuresBtnLayout = None
 
+
+
 class UI(QWidget):
+    """This class holds all of the logic behind running the front end.
+
+    Args: 
+        QWidget: QWidget is passed to allow this class to utilize
+        QWidget functions
+
+    Attributes:
+        Most of the front end attributes are declared here
+        for the program to work.
+
+    """
+
+
     def setup(self, Controller):
+        """Setup holds all of the QWidgets and the order of the pages
+
+        This function sets up the skeleton of the program, meaning it declares
+        all the pages the program has and calls each page in order.
+
+        Args:
+            Controller: The Controller class which handles which pages
+            the program should go to.
+
+        """
 
         # Creates webcam_photos if it doesn't exist
         if not os.path.exists("backend/webcam_photos"):
@@ -75,93 +72,96 @@ class UI(QWidget):
             print ("ResizedImages exists")
 
         # Need multiple menuButtons for each
+        # Optimally should only be one button
         self.menuButton = QPushButton("Back to main menu")
         self.menuButton2 = QPushButton("Back to main menu")
 
         # Hold the widgets
         self.menu = QStackedLayout()
-
+        
+        # Setting up the necessary QWidgets
         # order matters
         self.menuSelection = QWidget()
         self.webcamSelection = QWidget()
         self.pictureSelection = QWidget()
-        self.resizeSelectedPictureProcessing = QWidget()
         self.resizeSelectedPicture = QWidget()
-
         self.faceAlignmentPickScreen = QWidget()
         self.faceAlignmentManualHelpScreen = QWidget()
-
-        self.photoProcessingScreen = QWidget()
         self.photoProcessedScreen = QWidget()
         self.featuresListScreen = QWidget()
-        self.caricatureCreationScreen = QWidget()
         self.finalScreen = QWidget()
 
         # Call the functions here
         self.beginningMenu()
         self.webcamConfiguration()
         self.photoSelection()
-#        self.resizingPictureProcessing()
         self.resizingPicture()
         self.faceAlignmentPick()
         self.faceAlignmentManualHelper()
-        # self.photoProcessing()
         self.photoProcessed()
         self.featuresList()
-        self.caricatureCreation()
         self.endScreen()
 
         # order matters!
         self.menu.addWidget(self.menuSelection)
         self.menu.addWidget(self.webcamSelection)
         self.menu.addWidget(self.pictureSelection)
-        # self.menu.addWidget(self.resizeSelectedPictureProcessing)
         self.menu.addWidget(self.resizeSelectedPicture)
         self.menu.addWidget(self.faceAlignmentPickScreen)
         self.menu.addWidget(self.faceAlignmentManualHelpScreen)
-        # self.menu.addWidget(self.photoProcessingScreen)
         self.menu.addWidget(self.photoProcessedScreen)
         self.menu.addWidget(self.featuresListScreen)
-        self.menu.addWidget(self.caricatureCreationScreen)
         self.menu.addWidget(self.finalScreen)
 
     # menu selection
     def beginningMenu(self):
+        """This page holds the main menu (Select a photo, Webcam, Quit)
+
+
+        """
 
         self.menuSelection.resize(675, 400)
-
+        
+        # Setting up layout
         mainLayout = QVBoxLayout()
 
+        # Main menu title and styling
         mainMenuTitle = QLabel(self.menuSelection)
         mainMenuTitle.setAlignment(Qt.AlignCenter)
         mainMenuTitle.setFont(QFont("Century Gothic", 14, weight=QFont.Bold))
         mainMenuTitle.move(50, 50)
         mainMenuTitle.setText("Identifying Distinctive Features for Explainable Face Verification")
         mainMenuTitle.adjustSize()
-
-
         self.menuSelection.setWindowTitle("Unique Facial Feature Detection")
+       
+        # Choose a webcam button
         CameraSettings = QPushButton('Use a camera', self)
         CameraSettings.setToolTip('Choose a webcam')
-
+        
+        # Choose from files button
         ChoosePicture = QPushButton("Choose from files", self)
         ChoosePicture.setToolTip('Choose picture')
 
         # Menu buttons
         CameraSettings.clicked.connect(self.configureWebcamWindow)
         ChoosePicture.clicked.connect(self.choosePictureWindow)
-
+        
+        # Button layouts
         buttonLayout = QHBoxLayout()
         buttonLayout.addWidget(CameraSettings)
         buttonLayout.addWidget(ChoosePicture)
 
+        # Quit button
         quitButton = QPushButton('Quit', self)
         quitButton.clicked.connect(QApplication.instance().quit)
         buttonLayout.addWidget(quitButton)
+
+        # Setting layout
         mainLayout.addLayout(buttonLayout)
         self.menuSelection.setLayout(mainLayout)
 
     def webcamConfiguration(self):
+
         global saveImage
         saveImage = 0
 
@@ -391,13 +391,22 @@ class UI(QWidget):
         error.showMessage(msg)
 
     def photoSelection(self):
+        """Allows user to choose from files
+
+        Note:
+            This is also where we set the picture location that we send to
+            the backend.
+
+        """
+
+        
         global saveImage
         saveImage = 1
 
         self.pictureSelection.setWindowTitle("Unique Facial Feature Detection")
-
         self.pictureSelection.resize(575, 400)
-
+        
+        # Layouts
         pictureSelectionLayout = QVBoxLayout()
         pictureSelectionMainMenu = QHBoxLayout()
         pictureSelectionMainMenu.addWidget(self.menuButton2)
@@ -414,7 +423,6 @@ class UI(QWidget):
         selectPhotoButton.clicked.connect(self.openPhoto)
 
         # Go to resizing window
-        # TODO:
         self.selectedPhotoContinue.clicked.connect(self.faceAlignmentPickWindow)
 
         selectedPhotoHelper = QLabel(self.pictureSelection)
@@ -423,9 +431,11 @@ class UI(QWidget):
         selectedPhotoHelper.setGeometry(QRect(160, -60, 300, 200))
         selectedPhotoHelper.setStyleSheet("font: 14pt Century Gothic; font-weight: bold")
         selectedPhotoHelper.setText("Selected photo is: ")
-
+        
+        # Declaring location for the chosen file
         self.selectedPictureLocation = ""
 
+        # Picture Preview Layout
         pictureDisplayLayout = QVBoxLayout()
         pictureDisplayLayout.addWidget(selectedPhotoHelper)
         pictureDisplayLayout.addWidget(self.selectedPictureName)
@@ -439,7 +449,6 @@ class UI(QWidget):
 
  # Run photo through backend
     def startPhotoProcessing(self):
-        # print ("BACKEND NOW")
         self.photoProcessedWindow()
         filename = QTextDocument(self.selectedPictureName.text())
         textFileName = filename.toPlainText()
@@ -466,25 +475,28 @@ class UI(QWidget):
         outputTextFile.write(self.uniqueFeatureList)
         outputTextFile.close()
 
-
-
     def faceAlignmentPick(self):
+        """The menu to choose manual or auto alignment
+
+        """
+
         self.faceAlignmentPickScreen = QWidget()
         self.faceAlignmentPickScreen.setWindowTitle("Unique Facial Feature Detection")
         self.faceAlignmentPickScreen.resize(575, 400)
-
+        
+        # Layouts
         faceAlignmentLayout = QVBoxLayout()
         faceAlignmentButtonLayout = QHBoxLayout()
-
         faceAlignmentTitleLayout = QVBoxLayout()
-
         faceAlignmentTitleLayout.setContentsMargins(50,0,50,100)
 
+        # Title styling
         facePickerTitle = QLabel(self.faceAlignmentPickScreen)
         facePickerTitle.setAlignment(Qt.AlignCenter)
         facePickerTitle.setStyleSheet("font: 14pt Century Gothic; font-weight: bold")
         facePickerTitle.setText("Face Alignment")
-
+        
+        # Instructions styling
         facePickerInstructions = QLabel(self.faceAlignmentPickScreen)
         facePickerInstructions.setAlignment(Qt.AlignCenter)
         facePickerInstructions.setStyleSheet("font: 14pt Century Gothic")
@@ -495,129 +507,148 @@ class UI(QWidget):
         faceAlignmentTitleLayout.addWidget(facePickerInstructions)
 
 
-
         faceAlignmentAutoButton = QPushButton("Auto Face Alignment", self)
         faceAlignmentManualButton = QPushButton("Manual Face Alignment", self)
 
         faceAlignmentButtonLayout.addWidget(faceAlignmentAutoButton)
         faceAlignmentButtonLayout.addWidget(faceAlignmentManualButton)
-
+        
+        # Send to desired alignment function
         faceAlignmentAutoButton.clicked.connect(self.startFaceAlignmentAuto)
         faceAlignmentManualButton.clicked.connect(self.faceAlignmentManualHelpWindow)
-
+        
+        # Final layout configuration
         faceAlignmentLayout.addLayout(faceAlignmentTitleLayout)
         faceAlignmentLayout.addLayout(faceAlignmentButtonLayout)
         self.faceAlignmentPickScreen.setLayout(faceAlignmentLayout)
 
     def faceAlignmentManualHelper(self):
+        """This screen gives instructions on how to manually align
+
+        The user is able to manually adjust as many times as they want
+
+        """
+        
+        # Ensure webcam has stopped
         self.camera.stop()
-        self.faceAlignmentManualHelpScreen = QWidget()
+
+        # 
         self.faceAlignmentManualHelpScreen.setWindowTitle("Unique Facial Feature Detection")
         self.faceAlignmentManualHelpScreen.resize(575, 400)
 
         # Layouts
         faceAlignmentManualHelpLayout = QVBoxLayout()
         faceAlignmentManualButtonLayout = QHBoxLayout()
-
+        
+        # This is the display of the picture after alignment
         self.faceManualHelper = QLabel(self.faceAlignmentManualHelpScreen)
         self.faceManualHelper.setAlignment(Qt.AlignCenter)
 
+        # Button to start manual face alignment function
         faceAlignmentManualButton = QPushButton("Manually align face", self)
         faceAlignmentManualButton.clicked.connect(self.startFaceAlignmentManual)
 
+        # Title styling
         manualInstructionsTitle = QLabel(self.faceAlignmentManualHelpScreen)
         manualInstructionsTitle.setAlignment(Qt.AlignCenter)
         manualInstructionsTitle.setStyleSheet("font: 14pt Century Gothic; font-weight: bold")
         manualInstructionsTitle.setText("Instructions:")
-
+        
+        # Instructions styling
         manualInstructions = QLabel(self.faceAlignmentManualHelpScreen)
         manualInstructions.setAlignment(Qt.AlignCenter)
         manualInstructions.setStyleSheet("font: 14pt Century Gothic")
         manualInstructions.setText("A screen will appear showing the image. With the selector tool, draw a box around the face in the image.\n When satisfied, press ENTER. Once completed, exit the newly opened ROI window and the ROI selector window.")
         manualInstructions.setWordWrap(True)
 
-
-
-
-
+        # Layout configuration
         faceAlignmentManualHelpLayout.addWidget(manualInstructionsTitle)
         faceAlignmentManualHelpLayout.addWidget(manualInstructions)
         faceAlignmentManualHelpLayout.addWidget(self.faceManualHelper)
         faceAlignmentManualHelpLayout.addWidget(faceAlignmentManualButton)
-        # faceAlignmentManualHelpLayout.addWidget(self.resizingPictureDisplayLabel)
 
+        # Continue when done alignment button
         faceAlignmentManualContinue = QPushButton("Continue", self)
         faceAlignmentManualButtonLayout.addWidget(faceAlignmentManualContinue)
-
-        # faceAlignmentManualContinue.clicked.connect(self.photoProcessingWindow)
         faceAlignmentManualContinue.clicked.connect(self.startPhotoProcessing)
-
+        
+        # Final layout configuration
         faceAlignmentManualHelpLayout.addLayout(faceAlignmentManualButtonLayout)
         self.faceAlignmentManualHelpScreen.setLayout(faceAlignmentManualHelpLayout)
 
 
 
     def startFaceAlignmentAuto(self):
+        """Starts the auto alignment
+           
+        Note:
+            User must have CUDA enabled GPU for this to work
+
+        """
         # goes to line 600, resizingPicture()
         self.resizingProcessedWindow()
+
+        # Calls the auto face alignment algorithm in the backend
         FaceAlignmentAuto(self.selectedPictureLocation)
 
         # Setting the cropped img once FaceAlignment is done
-        # Need to think of this when we use multiple photos
         self.croppedImg = QPixmap("./backend/ResizedImages/newCropped.jpeg")
+
+        # Setting the display labels to the cropped image
         self.resizingPictureDisplayLabel.setPixmap(self.croppedImg)
         self.faceManualHelper.setPixmap(self.croppedImg)
 
     def startFaceAlignmentManual(self):
+        """Starts the manual alignment
+
+        """
+
+        # Calls the manual face alignment given the selected picture location
         FaceAlignmentManual(self.selectedPictureLocation)
+
         # Resetting the photo on screen
         self.croppedImg = QPixmap("./backend/ResizedImages/newCropped.jpeg")
+
+        # Setting the display labels to the cropped image
         self.resizingPictureDisplayLabel.setPixmap(self.croppedImg)
         self.faceManualHelper.setPixmap(self.croppedImg)
 
 
     # Choose a file
     def openPhoto(self):
-        # options = QFileDialog.Options()
+        """Allows user to choose file from their own documents
+
+        """
+        # Open file dialog for user to pick their image
         files, _ = QFileDialog.getOpenFileNames(self,"QFileDialog.getOpenFileNames()", "","Image files (*.jpg *.png)")
+
+        # If valid file
         if files:
+
+            # Picture display styling
             self.selectedPictureName.setGeometry(QRect(70, -30, 500, 200))
             self.selectedPictureName.setAlignment(Qt.AlignCenter)
             self.selectedPictureName.setStyleSheet("font: 10pt Century Gothic")
-
+            
+            # Picture preview display
             picturePreview = QPixmap(files[0])
             self.selectedPictureName.setPixmap(picturePreview.scaled(self.selectedPictureName.width() * 2, self.selectedPictureName.height() * 2, Qt.KeepAspectRatio))
-
+            
+            # Saving the chosen picture location
             self.selectedPictureLocation = files[0]
 
-            # Enable continue button
+            # Enable continue button (this is greyed out if image has not been selected yet)
             self.selectedPhotoContinue.setEnabled(True)
-
-
-
-            # Incorporate/mix Jazel's code here
-            # We send cropped photo through Jazel's code to send to Bryson's Algorithm
-
-
-    # This screen will have a loading screen when the face alignment algorithm is happening
-    # THIS NEEDS TO RUN WITH MULTITHREADING(?)
-    def resizingPictureProcessing(self):
-        self.resizeSelectedPictureProcessing.setWindowTitle("Unique Facial Feature Detection")
-        self.resizeSelectedPictureProcessing.resize(575, 400)
-
-
-        # Add label to say what is happening
-        spinnerLabel = QLabel(self.resizeSelectedPictureProcessing)
-        spinnerLabel.setGeometry(QRect(270, 120, 30, 30))
-        spinnerLabel.setScaledContents(True)
-        spinner = QMovie("static/spinner.gif")
-        spinnerLabel.setMovie(spinner)
-        spinner.start()
 
 
 
     # This screen will show after, giving the option to the user to manually align
     def resizingPicture(self):
+        """This page shows after auto alignment
+
+        This page also gives user to manually adjust if needed
+
+        """
         self.resizeSelectedPicture.setWindowTitle("Unique Facial Feature Detection")
         self.resizeSelectedPicture.resize(575, 400)
 
@@ -626,47 +657,57 @@ class UI(QWidget):
 
         # Photo picked from user
         self.croppedImg = QPixmap("")
+
+        # Resized photo display preview
         self.resizingPictureDisplayLabel = QLabel(self.resizeSelectedPicture)
         self.resizingPictureDisplayLabel.setAlignment(Qt.AlignCenter)
         self.resizingPictureDisplayLabel.setStyleSheet("padding: 30px")
+
         resizingPictureDisplayLayout = QVBoxLayout()
+
+        # Title styling
         croppedTitle = QLabel(self.resizeSelectedPicture)
         croppedTitle.setAlignment(Qt.AlignCenter)
         croppedTitle.setStyleSheet("font: 14pt Century Gothic")
         croppedTitle.setText("Your Cropped Photo:")
-
-        # SHOULD MAKE THIS WARNING A TOOLTIP WARNING
+        
+        # Note that the photo is readjusted to 178x218
+        # Would add more warnings if we added more adjustments in the face alignment
         croppedWarning = QLabel(self.resizeSelectedPicture)
         croppedWarning.setAlignment(Qt.AlignCenter)
         croppedWarning.setStyleSheet("font: 10pt Century Gothic")
         croppedWarning.setText("Note: Your photo will automatically adjust to 178x218")
 
+        # Layout configuration
         resizingPictureDisplayLayout.addWidget(croppedTitle)
         resizingPictureDisplayLayout.addWidget(croppedWarning)
         resizingPictureDisplayLayout.addWidget(self.resizingPictureDisplayLabel)
 
 
-        # Buttons
+        # Restart buttons
         resizingPictureBtnLayout = QHBoxLayout()
         repeatResizingPicture = QPushButton("Manually Crop Photo", self)
         finishedResizingPhotoButton = QPushButton("Continue", self)
-
+        
+        # Layout configuration 
         resizingPictureBtnLayout.addWidget(repeatResizingPicture)
         resizingPictureBtnLayout.addWidget(finishedResizingPhotoButton)
-
-
         resizingPictureLayout.addLayout(resizingPictureDisplayLayout)
         resizingPictureLayout.addLayout(resizingPictureBtnLayout)
 
-
+        
         self.resizeSelectedPicture.setLayout(resizingPictureLayout)
-
+        
+        # This goes to the manual alignment window if user wants to manually align
         repeatResizingPicture.clicked.connect(self.faceAlignmentManualHelpWindow)
+        # Go to backend to get unique features
         finishedResizingPhotoButton.clicked.connect(self.startPhotoProcessing)
 
 
-
     def endScreen(self):
+        """Final screen, allowing user to restart or quit
+
+        """
         self.finalScreen.setWindowTitle("Unique Facial Feature Detection")
         self.finalScreen.resize(575, 400)
 
@@ -677,7 +718,7 @@ class UI(QWidget):
         finalScreenBtnLayout.addWidget(menuButtonFinal)
         finalScreenBtnLayout.addWidget(exitBtn)
 
-
+        # Final screen text styling
         finalScreenText = QLabel(self.finalScreen)
         finalScreenText.setStyleSheet("font: 14pt Century Gothic")
         finalScreenText.setText("Would you like to try again?")
@@ -690,43 +731,7 @@ class UI(QWidget):
 
         self.finalScreen.setLayout(finalScreenBtnLayout)
 
-    # MIGHT NOT EVEN NEED IF PROCESSING IS TOO FAST
-    def photoProcessing(self):
-        self.photoProcessingScreen.setWindowTitle("Unique Facial Feature Detection")
-        self.photoProcessingScreen.resize(575, 400)
-
-        photoProcessingBtnLayout = QHBoxLayout()
-
-        # Spinner animation
-        spinnerLabel = QLabel(self.photoProcessingScreen)
-        spinnerLabel.setGeometry(QRect(270, 120, 30, 30))
-        spinnerLabel.setScaledContents(True)
-        spinner = QMovie("static/spinner.gif")
-        spinnerLabel.setMovie(spinner)
-        spinner.start()
-
-        obtainingFeaturesText = QLabel(self.photoProcessingScreen)
-        obtainingFeaturesText.setStyleSheet("font: 14pt Century Gothic")
-        obtainingFeaturesText.setText("Obtaining unique features...")
-        obtainingFeaturesText.setGeometry(QRect(30, -10, 500, 200))
-        obtainingFeaturesText.setAlignment(Qt.AlignCenter)
-
-        photoProcessedBtn = QPushButton("Continue")
-        photoProcessingBtnLayout.addWidget(photoProcessedBtn)
-
-        photoProcessedBtn.clicked.connect(self.photoProcessedWindow)
-
-
-        self.photoProcessingScreen.setLayout(photoProcessingBtnLayout)
-
-
-
-        #TODO:
-        # Only put continue if features have been extracted
-        # Allow back button??
-
-        # spinner.stop()
-
+    
     # Menu to choose feature list or create a caricature
     def photoProcessed(self):
         self.photoProcessedScreen.setWindowTitle("Unique Facial Feature Detection")
@@ -802,7 +807,6 @@ class UI(QWidget):
         # open .txt file with features
         inputTextFileName = './static/features.txt'
 
-        # was originally "r", might change back (change by Josh)
         inputTextFile = open(inputTextFileName, "r")
         '''
         # read features from .txt file
@@ -900,42 +904,6 @@ class UI(QWidget):
 
         self.featuresListScreen.setLayout(featuresLayout)
 
-    def caricatureCreation(self):
-        # TODO:
-        # Shorten names pleeeeeeeeeeeeeeeeeeeeez
-
-        self.caricatureCreationScreen.setWindowTitle("Unique Facial Feature Detection")
-        self.caricatureCreationScreen.resize(575, 400)
-
-        caricatureCreationLayout = QVBoxLayout()
-        caricatureCreationBtnLayout = QHBoxLayout()
-
-        createdCaricatureText = QLabel(self.photoProcessedScreen)
-        createdCaricatureText.setStyleSheet("font: 14pt Century Gothic")
-        createdCaricatureText.setText("Your caricature!")
-        # obtainedFeaturesList.setGeometry(QRect(30, -10, 500, 200))
-        createdCaricatureText.setAlignment(Qt.AlignCenter)
-
-        caricatureCreationLayout.addWidget(createdCaricatureText)
-
-        createdCaricature = QPixmap("static/SampleCaricature")
-        createdCaricatureLabel = QLabel(self.caricatureCreationScreen)
-        createdCaricatureLabel.setAlignment(Qt.AlignCenter)
-        createdCaricatureLabel.setPixmap(createdCaricature)
-
-
-        caricatureCreationLayout.addWidget(createdCaricatureLabel)
-
-        saveListBtn = QPushButton("Save caricature")
-        continueBtn = QPushButton("Continue")
-
-        caricatureCreationBtnLayout.addWidget(saveListBtn)
-        caricatureCreationBtnLayout.addWidget(continueBtn)
-
-        continueBtn.clicked.connect(self.goToEndWindow)
-        caricatureCreationLayout.addLayout(caricatureCreationBtnLayout)
-        self.caricatureCreationScreen.setLayout(caricatureCreationLayout)
-
     def saveList(self):
         name, _ = QFileDialog.getSaveFileName(self, 'Save File', "features.txt")
         listFile = open("./static/features.txt", 'r')
@@ -980,22 +948,34 @@ class UI(QWidget):
             os.remove(self.selectedPictureLocation)
 
 class Controller(QMainWindow, UI):
+    """This controls which page the application should go to
+
+    Args:
+        QMainWindow: Provides the main application window
+        UI: Handles all front end screens
+
+    Attributes:
+        Attributes declared in class UI are handled here.
+
+    """
+
     def __init__(self):
 
         super().__init__()
 
         self.setup(self)
 
-
         # Sends back to main menu
         # Need separate widget for each window
-        # TODO: Figure out how to only have 1 menu button
-
+        # Optimally only one button should be needed
         self.menuButton.clicked.connect(self.menuWindow)
         self.menuButton2.clicked.connect(self.menuWindow)
 
 
+    
+    """These functions set the index of which page the front end should go to
 
+    """
     def menuWindow(self):
         self.menu.setCurrentIndex(0)
 
@@ -1004,12 +984,11 @@ class Controller(QMainWindow, UI):
 
         # Turn continue button off in photo selection
         self.selectedPhotoContinue.setEnabled(False)
-
+        
+        # Resetting all display labels to empty when restarting
         self.faceManualHelper.clear()
         self.resizingPictureDisplayLabel.clear()
         self.webcampic.clear()
-
-        # Need to do same stuff for webcam stuff
 
     def configureWebcamWindow(self):
         self.menu.setCurrentIndex(1)
@@ -1017,10 +996,6 @@ class Controller(QMainWindow, UI):
 
     def choosePictureWindow(self):
         self.menu.setCurrentIndex(2)
-
-    # REFER TO ABOVE ABOUT MULTITHREADING
-    # def resizingPhotoProcessingWindow(self):
-        # self.menu.setCurrentIndex(3)
 
     def resizingProcessedWindow(self):
         self.menu.setCurrentIndex(3)
@@ -1031,21 +1006,14 @@ class Controller(QMainWindow, UI):
     def faceAlignmentManualHelpWindow(self):
         self.menu.setCurrentIndex(5)
 
-    # Choose for caricature or just a list
-    # def photoProcessingWindow(self):
-        # self.menu.setCurrentIndex(6)
-
     def photoProcessedWindow(self):
         self.menu.setCurrentIndex(6)
 
     def featuresListWindow(self):
         self.menu.setCurrentIndex(7)
 
-    def caricatureCreationWindow(self):
-        self.menu.setCurrentIndex(8)
-
     def goToEndWindow(self):
-        self.menu.setCurrentIndex(9)
+        self.menu.setCurrentIndex(8)
 
     def exitProgram(self):
         sys.exit()
