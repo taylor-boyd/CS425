@@ -36,11 +36,13 @@ featuresBtnLayout = None
 class UI(QWidget):
     """This class holds all of the logic behind running the front end.
 
-    Args: 
+    Parameters
+    ----------
         QWidget: QWidget is passed to allow this class to utilize
         QWidget functions
 
-    Attributes:
+    Attributes
+    ----------
         Most of the front end attributes are declared here
         for the program to work.
 
@@ -53,7 +55,8 @@ class UI(QWidget):
         This function sets up the skeleton of the program, meaning it declares
         all the pages the program has and calls each page in order.
 
-        Args:
+        Parameters
+        ----------
             Controller: The Controller class which handles which pages
             the program should go to.
 
@@ -446,10 +449,13 @@ class UI(QWidget):
 
         self.pictureSelection.setLayout(pictureSelectionLayout)
 
-
- # Run photo through backend
     def startPhotoProcessing(self):
+        """Function for running the photo through the backend
+        """
+        # set up corresponding window
         self.photoProcessedWindow()
+
+        # store file name of photo
         filename = QTextDocument(self.selectedPictureName.text())
         textFileName = filename.toPlainText()
 
@@ -458,18 +464,12 @@ class UI(QWidget):
         lastApost = len(textFileName) - 2
         actualFileName = textFileName[afterFirstApost:lastApost]
 
-        # old way of calling shape_predict.py, can probably delete; returns 0 on success
-        # self.uniqueFeatureList = os.system('python backend/shape_predict.py ' + actualFileName)
-
         # run shape_predict.py with actualFileName
         proc = subprocess.Popen(["python", "backend/shape_predict.py", self.selectedPictureLocation], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate()
         self.uniqueFeatureList = out.decode("utf-8")
-        # print ("UNIQUE FEATURES:", self.uniqueFeatureList)
 
         # write feature list to a .txt file - currently creates and overwrites the same file
-        # TODO: consider how it'll work with different files
-        # print ("LIST:", self.uniqueFeatureList)
         outputTextFileName = './static/features.txt'
         outputTextFile = open(outputTextFileName, "w")
         outputTextFile.write(self.uniqueFeatureList)
@@ -734,6 +734,10 @@ class UI(QWidget):
     
     # Menu to choose feature list or create a caricature
     def photoProcessed(self):
+        """Window for after photo processing. User can choose to show the
+        unique feature list or create a caricature.
+        """
+        # set up initial window features
         self.photoProcessedScreen.setWindowTitle("Unique Facial Feature Detection")
         self.photoProcessedScreen.resize(575, 400)
 
@@ -743,40 +747,37 @@ class UI(QWidget):
         obtainedFeaturesText.setGeometry(QRect(30, -10, 500, 200))
         obtainedFeaturesText.setAlignment(Qt.AlignCenter)
 
-        # from Jeron
-        # predictor = ShapePredictor("model/shape_model", "shape-labels.txt")
         global results
         global images
         if saveImage == 1:
-            # if file exists
+            # open cropped image if it exists
             if (str(os.path.isfile("./backend/ResizedImages/newCropped.jpeg")) == True):
                 images = Image.open("./backend/ResizedImages/newCropped.jpeg")
         else:
             images = Image.open(path)
-        # results = predictor.process_image(images)
 
-        # Two buttons here for Feature List or Caricature
+        # set up button to show unique features
         photoProcessedBtnLayout = QHBoxLayout()
         getFeaturesListBtn = QPushButton("Get unique feature's list!")
-        # createCaricatureBtn = QPushButton("Create a caricature!")
-
         photoProcessedBtnLayout.addWidget(getFeaturesListBtn)
-        # photoProcessedBtnLayout.addWidget(createCaricatureBtn)
 
-        getFeaturesListBtn.clicked.connect(self.outputtingList) # orig. featuresListWindow
-        # createCaricatureBtn.clicked.connect(self.caricatureCreationWindow)
+        # go to next window if button is clicked
+        getFeaturesListBtn.clicked.connect(self.outputtingList)
 
         self.photoProcessedScreen.setLayout(photoProcessedBtnLayout)
 
-    # outputs list of unique features
     def outputtingList(self):
+        """Window for displaying the list of unique features detected in
+        the input photo.
+        """
+        # set up initial window layout
         self.featuresListWindow()
         global outputListLayout
         if outputListLayout is None:
             # set up initial layout
             outputListLayout = self.featuresListScreen.layout()
         else:
-            # reset layout (assumed restart)
+            # set up reset layout (assumed restart)
 
             # delete widgets
             while outputListLayout.count():
@@ -791,6 +792,7 @@ class UI(QWidget):
             obtainedFeaturesList.setAlignment(Qt.AlignCenter)
             outputListLayout.addWidget(obtainedFeaturesList)
 
+        # set up or reset button layout
         global featuresBtnLayout
         if featuresBtnLayout is None:
             # set up initial layout
@@ -807,13 +809,10 @@ class UI(QWidget):
         # open .txt file with features
         inputTextFileName = './static/features.txt'
 
+        # read features.txt into holder variable
         inputTextFile = open(inputTextFileName, "r")
-        '''
-        # read features from .txt file
-        listOfFeatures = inputTextFile.read()
-        results = str(listOfFeatures)    # save list into results for Jeron's saveList
-        '''
-        # display list of unique features
+
+        # set up for displaying list of unique features
         actualFeaturesList = QLabel(self.photoProcessedScreen)
         actualFeaturesList.setStyleSheet("font: 10pt Century Gothic")
 
@@ -825,7 +824,7 @@ class UI(QWidget):
         for x, y in uniqueFeatureDict.items():
             actualFeaturesList.setText(actualFeaturesList.text() + "\n" + x + ": " + str(y))
 
-        # actualFeaturesList.setText(listOfFeatures)
+        # settings for how unique list will be displayed
         actualFeaturesList.setWordWrap(True)
         actualFeaturesList.setAlignment(Qt.AlignCenter)
         outputListLayout.addWidget(actualFeaturesList)
@@ -833,69 +832,60 @@ class UI(QWidget):
         # close .txt file
         inputTextFile.close()
 
-        # Allow save option
-        # Save in .txt format is probably preferable
-        # saveListBtn does nothing for now, will implement when we tie in unique algorithm
+        # Allow user to save the unique features list (in features.txt format)
         saveListBtn = QPushButton("Save unique features list")
 
-        # if from Jeron
         global images
 
+        # allow user to save the webcam photo
         savePhotoBtn = QPushButton("Save Photo")
 
+        # only display the Save Photo button if the photo was taken by the webcam
         if saveImage == 0 or self.selectedPictureLocation.find('webcam_photos') != -1:
             # savePhotoBtn = QPushButton("Save Photo")
             featuresBtnLayout.addWidget(savePhotoBtn)
             # savePhotoBtn.clicked.connect(self.savePhoto(images))
 
         continueBtn = QPushButton("Continue")
-
         featuresBtnLayout.addWidget(saveListBtn)
-        '''
-        # if from Jeron
-        if saveImage == 0:
-            featuresBtnLayout.addWidget(savePhotoBtn)
-        '''
         featuresBtnLayout.addWidget(continueBtn)
 
-        # Save Features List - from Jeron
+        # connect to saveList window if corresponding button is clicked
         saveListBtn.clicked.connect(self.saveList)
 
-        # Save Photo
+        # connect to savePhoto window if corresponding button is clicked
         savePhotoBtn.clicked.connect(self.savePhoto)
 
         # Delete features.txt then go to end screen
         continueBtn.clicked.connect(self.deleteFeaturesTxt)
         continueBtn.clicked.connect(self.fileDelete)
 
-        # Go to end screen
-        #continueBtn.clicked.connect(self.goToEndWindow)
-
+        # add buttons to window layout
         outputListLayout.addLayout(featuresBtnLayout)
-        # self.featuresListScreen.setLayout(outputListLayout)   # necessary???
 
     def deleteFeaturesTxt(self):
+        """Function for deleting the temporary features.txt file,
+        if it exists. Go to end window directly afterwards.
+        """
         file_path = os.path.dirname(os.path.realpath(__file__))
         if os.path.exists(file_path + '\\static\\features.txt'):
             os.remove(file_path + '\\static\\features.txt')
         self.goToEndWindow()
 
-    # Display feature list
     def featuresList(self):
+        """Function for setting up the window/layout for the unique
+        feature list display.
+        """
         self.featuresListScreen.setWindowTitle("Unique Facial Feature Detection")
         self.featuresListScreen.resize(575, 400)
 
         featuresLayout = QVBoxLayout()
-        # Hold save and continue button
         featuresBtnLayout = QHBoxLayout()
 
         obtainedFeaturesList = QLabel(self.photoProcessedScreen)
         obtainedFeaturesList.setStyleSheet("font: 14pt Century Gothic")
         obtainedFeaturesList.setText("Your unique features!")
-        # obtainedFeaturesList.setGeometry(QRect(30, -10, 500, 200))
         obtainedFeaturesList.setAlignment(Qt.AlignCenter)
-
-        # obtainedFeaturesList.setText(str(results))    # from Jeron?
 
         featuresLayout.addWidget(obtainedFeaturesList)
 
@@ -905,6 +895,9 @@ class UI(QWidget):
         self.featuresListScreen.setLayout(featuresLayout)
 
     def saveList(self):
+        """Function for saving the list of unique features. Utilizes a temporary
+        text file, features.txt.
+        """
         name, _ = QFileDialog.getSaveFileName(self, 'Save File', "features.txt")
         listFile = open("./static/features.txt", 'r')
         listFromListFile = listFile.read()
@@ -912,10 +905,8 @@ class UI(QWidget):
         # only write to file if save file name was created
         if name:
             file = open(name, 'w')
-            # global results
 
             # writing contents of static/features.txt into new file
-            # orig. write(str(results))
             file.write(listFromListFile)
 
             # close output file
@@ -928,7 +919,6 @@ class UI(QWidget):
         file_path = os.path.dirname(os.path.realpath(__file__))
         os.remove(file_path + '\\static\\features.txt')
 
-    # orig. parameters: self, input
     def savePhoto(self):
         name, _ = QFileDialog.getSaveFileName(self, 'Save File', "image.png")
         # only save photo file if file name was decided
@@ -946,6 +936,7 @@ class UI(QWidget):
         global saveImage
         if os.path.exists(self.selectedPictureLocation) and self.selectedPictureLocation.find('webcam_photos') != -1:
             os.remove(self.selectedPictureLocation)
+
 
 class Controller(QMainWindow, UI):
     """This controls which page the application should go to
@@ -973,7 +964,7 @@ class Controller(QMainWindow, UI):
 
 
     
-    """These functions set the index of which page the front end should go to
+    """These functions set the index of which page the front end should go to.
 
     """
     def menuWindow(self):
@@ -1017,6 +1008,7 @@ class Controller(QMainWindow, UI):
 
     def exitProgram(self):
         sys.exit()
+
 
 if __name__ == '__main__':
 
