@@ -920,6 +920,7 @@ class UI(QWidget):
         os.remove(file_path + '\\static\\features.txt')
 
     def savePhoto(self):
+        """Function for saving the cropped image. Utilizes the temporary file name, img and the global variable images"""
         name, _ = QFileDialog.getSaveFileName(self, 'Save File', "image.png")
         # only save photo file if file name was decided
         if name:
