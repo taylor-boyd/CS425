@@ -164,6 +164,8 @@ class UI(QWidget):
         self.menuSelection.setLayout(mainLayout)
 
     def webcamConfiguration(self):
+        """ This page is for all webcam operations - it allows the user to
+        choose their camera device, take a picture, etc. """
 
         global saveImage
         saveImage = 0
@@ -296,6 +298,8 @@ class UI(QWidget):
         self.stackedLayout.setCurrentIndex(0)
 
     def changeIndex(self):
+        """ webcamConfiguration helper function 
+        """
         self.stackedLayout.setCurrentIndex(0)
 
     def clearLabel(self):
@@ -378,10 +382,14 @@ class UI(QWidget):
         self.stackedLayout.setCurrentIndex(1)
 
     def showWebcamPic(self):
+        """ allows user to see the photo they took
+        """
         webcampicPreview = QPixmap(self.selectedPictureLocation)
         self.webcampic.setPixmap(webcampicPreview.scaled(self.webcampic.width(), self.webcampic.height(), Qt.KeepAspectRatio))
 
     def stopCam(self):
+        """ turns off camera / disables viewfinder 
+        """
         self.camera.stop()
 
     # method for alerts
